@@ -26,6 +26,12 @@ const SIGNING_CONFIG = `        release {
 const RELEASE_SIGNING_LINE = `            signingConfig rootProject.file("keystore.properties").exists() ? signingConfigs.release : signingConfigs.debug`;
 
 module.exports = function withReleaseSigning(config) {
+  // На EAS Build подпись настраивает сам сервис: свой signingConfig там только
+  // мешает. Плагин нужен для локальной сборки ./gradlew assembleRelease.
+  if (process.env.EAS_BUILD === 'true' || process.env.EAS_BUILD === '1') {
+    return config;
+  }
+
   return withAppBuildGradle(config, (gradleConfig) => {
     let contents = gradleConfig.modResults.contents;
 
