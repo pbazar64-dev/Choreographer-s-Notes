@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { useUiPrefs, type ThemePreference } from '@/stores/uiPrefs';
@@ -12,6 +13,7 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const theme = useTheme();
   const themePreference = useUiPrefs((state) => state.themePreference);
   const setThemePreference = useUiPrefs((state) => state.setThemePreference);
@@ -19,6 +21,13 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <View style={{ gap: theme.spacing.md, paddingTop: theme.spacing.lg }}>
+        <Card onPress={() => router.push('/templates')}>
+          <Text variant="subtitle">Шаблоны уроков</Text>
+          <Text tone="muted">
+            Готовые структуры занятия: у детей и у взрослых логика урока разная.
+          </Text>
+        </Card>
+
         <Card>
           <Text variant="subtitle">Тема оформления</Text>
           <View

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Alert, FlatList, View } from 'react-native';
 
 import { getGroup, setGroupArchived } from '@/db/repositories/groups.repo';
-import { createLessonForGroup } from '@/features/lessons/createLesson';
 import { listGroupLessons } from '@/db/repositories/lessons.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
@@ -63,9 +62,7 @@ export default function GroupLessonsScreen() {
 
   function handleCreateLesson() {
     if (!group) return;
-    const lesson = createLessonForGroup(db, group);
-    bumpDbRevision();
-    router.push(`/lesson/${lesson.id}`);
+    router.push(`/lesson/new?groupId=${group.id}`);
   }
 
   return (

@@ -11,6 +11,7 @@ import {
   getGroup,
   updateGroup,
 } from '@/db/repositories/groups.repo';
+import { listTemplatesForGroup } from '@/db/repositories/templates.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
 import { ColorPicker } from '@/features/groups/components/ColorPicker';
@@ -36,7 +37,15 @@ export default function GroupEditScreen() {
   const [description, setDescription] = useState(group?.description ?? '');
   const [colorHex, setColorHex] = useState(group?.colorHex ?? DEFAULT_GROUP_COLOR);
   const [minutes, setMinutes] = useState(group?.defaultLessonMinutes ?? DEFAULT_LESSON_MINUTES);
+  const [defaultTemplateId, setDefaultTemplateId] = useState<number | null>(
+    group?.defaultTemplateId ?? null,
+  );
   const [error, setError] = useState<string | undefined>();
+
+  const templates = useDbQuery(
+    (database) => (groupId ? listTemplatesForGroup(database, groupId) : []),
+    [groupId],
+  );
 
   function handleSave() {
     const trimmed = name.trim();
@@ -51,6 +60,7 @@ export default function GroupEditScreen() {
         description: description.trim(),
         colorHex,
         defaultLessonMinutes: minutes,
+        defaultTemplateId,
       });
     } else {
       createGroup(db, {
@@ -123,6 +133,29 @@ export default function GroupEditScreen() {
           value={minutes}
           onChange={setMinutes}
         />
+
+        {groupId && templates.length > 0 ? (
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="label" tone="muted">
+              Шаблон урока по умолчанию
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+              <Button
+                title="Без шаблона"
+                variant={defaultTemplateId === null ? 'primary' : 'secondary'}
+                onPress={() => setDefaultTemplateId(null)}
+              />
+              {templates.map((template) => (
+                <Button
+                  key={template.id}
+                  title={template.name}
+                  variant={defaultTemplateId === template.id ? 'primary' : 'secondary'}
+                  onPress={() => setDefaultTemplateId(template.id)}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         <View style={{ gap: theme.spacing.sm, paddingTop: theme.spacing.sm }}>
           <Button title="Сохранить" onPress={handleSave} />

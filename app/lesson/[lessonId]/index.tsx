@@ -124,6 +124,12 @@ export default function LessonScreen() {
                 onPress={handleDuplicate}
               />
               <Button
+                title="Шаблон"
+                variant="secondary"
+                style={{ flex: 1 }}
+                onPress={() => router.push(`/lesson/${lessonId}/template`)}
+              />
+              <Button
                 title="Поделиться"
                 variant="secondary"
                 style={{ flex: 1 }}

@@ -60,6 +60,16 @@ function RootNavigator() {
           name="lesson/[lessonId]/attachment"
           options={{ presentation: 'modal', title: 'Материал в блоке' }}
         />
+        <Stack.Screen
+          name="lesson/[lessonId]/template"
+          options={{ presentation: 'modal', title: 'Шаблон структуры' }}
+        />
+        <Stack.Screen name="templates/index" options={{ title: 'Шаблоны уроков' }} />
+        <Stack.Screen name="templates/[templateId]" options={{ title: 'Шаблон' }} />
+        <Stack.Screen
+          name="templates/block"
+          options={{ presentation: 'modal', title: 'Блок шаблона' }}
+        />
         <Stack.Screen name="material/[materialId]" options={{ title: 'Материал' }} />
         <Stack.Screen
           name="material/add-link"
