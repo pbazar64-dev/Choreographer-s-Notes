@@ -1,48 +1,65 @@
-import { useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, View } from 'react-native';
 
 import { listGroups } from '@/db/repositories/groups.repo';
-import { useDatabase } from '@/db/useDatabase';
-import { formatFullDate } from '@/lib/date';
-import { lessonDurationLabel } from '@/constants/lessonDurations';
+import { useDbQuery } from '@/db/useDbQuery';
+import { GroupCard } from '@/features/groups/components/GroupCard';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Card, EmptyState, Screen, Text } from '@/ui';
+import { Button, EmptyState, Screen } from '@/ui';
 
 export default function GroupsScreen() {
-  const db = useDatabase();
+  const router = useRouter();
   const theme = useTheme();
-  const groups = useMemo(() => listGroups(db), [db]);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const groups = useDbQuery((db) => listGroups(db, showArchived), [showArchived]);
+  const archivedCount = useDbQuery(
+    (db) => listGroups(db, true).filter((group) => group.isArchived).length,
+    [],
+  );
 
   return (
     <Screen>
       <FlatList
         data={groups}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ gap: theme.spacing.md, paddingVertical: theme.spacing.lg }}
+        contentContainerStyle={{
+          gap: theme.spacing.md,
+          paddingBottom: theme.spacing.xxxl,
+          paddingTop: theme.spacing.lg,
+        }}
         ListEmptyComponent={
-          <EmptyState title="Групп пока нет" description="Создание групп появится на этапе Э1." />
+          <EmptyState
+            title="Групп пока нет"
+            description="Группа — это папка конспектов: «Дети 8–10», «Взрослые 16+»."
+            actionTitle="Создать группу"
+            onAction={() => router.push('/group/edit')}
+          />
         }
         ListFooterComponent={
-          groups.length > 0 ? (
+          archivedCount > 0 ? (
             <View style={{ paddingTop: theme.spacing.md }}>
-              <Text variant="caption" tone="muted">
-                Редактирование групп появится на этапе Э1.
-              </Text>
+              <Button
+                variant="ghost"
+                title={
+                  showArchived ? 'Скрыть архив' : `Показать архив (${archivedCount})`
+                }
+                onPress={() => setShowArchived((value) => !value)}
+              />
             </View>
           ) : null
         }
         renderItem={({ item }) => (
-          <Card accentColor={item.colorHex}>
-            <Text variant="subtitle">{item.name}</Text>
-            {item.description ? <Text tone="muted">{item.description}</Text> : null}
-            <Text variant="caption" tone="muted">
-              Конспектов: {item.lessonsCount} · Урок по умолчанию:{' '}
-              {lessonDurationLabel(item.defaultLessonMinutes)}
-              {item.lastLessonDate ? ` · Последний: ${formatFullDate(item.lastLessonDate)}` : ''}
-            </Text>
-          </Card>
+          <GroupCard group={item} onPress={() => router.push(`/group/${item.id}`)} />
         )}
       />
+
+      {groups.length > 0 ? (
+        <View style={{ paddingBottom: theme.spacing.lg }}>
+          <Button title="Новая группа" onPress={() => router.push('/group/edit')} />
+        </View>
+      ) : null}
     </Screen>
   );
 }

@@ -9,9 +9,12 @@ export type FontScale = (typeof FONT_SCALES)[number];
 type UiPrefsState = {
   themePreference: ThemePreference;
   lessonFontScale: FontScale;
+  /** Порядок конспектов в ленте группы: новые сверху или старые сверху */
+  lessonsNewestFirst: boolean;
   hydrated: boolean;
   setThemePreference: (value: ThemePreference) => void;
   setLessonFontScale: (value: FontScale) => void;
+  setLessonsNewestFirst: (value: boolean) => void;
   hydrate: (values: { themePreference: ThemePreference; lessonFontScale: FontScale }) => void;
 };
 
@@ -22,8 +25,10 @@ type UiPrefsState = {
 export const useUiPrefs = create<UiPrefsState>((set) => ({
   themePreference: 'system',
   lessonFontScale: 1,
+  lessonsNewestFirst: true,
   hydrated: false,
   setThemePreference: (themePreference) => set({ themePreference }),
   setLessonFontScale: (lessonFontScale) => set({ lessonFontScale }),
+  setLessonsNewestFirst: (lessonsNewestFirst) => set({ lessonsNewestFirst }),
   hydrate: (values) => set({ ...values, hydrated: true }),
 }));

@@ -15,11 +15,18 @@ import {
   countGroupLessons,
   createGroup,
   deleteGroup,
+  getGroup,
   listGroups,
   nextLessonOrderNumber,
   setGroupArchived,
+  updateGroup,
 } from '@/db/repositories/groups.repo';
-import { createLesson, deleteLesson, listGroupLessons } from '@/db/repositories/lessons.repo';
+import {
+  createLesson,
+  deleteLesson,
+  listGroupLessons,
+  updateLesson,
+} from '@/db/repositories/lessons.repo';
 import { getSetting, setSetting, SETTINGS_KEYS } from '@/db/repositories/settings.repo';
 import type { AppDatabase } from '@/db/client';
 
@@ -69,6 +76,24 @@ describe('группы', () => {
     expect(nextLessonOrderNumber(db, group.id)).toBe(1);
     makeLesson(group.id);
     expect(nextLessonOrderNumber(db, group.id)).toBe(2);
+  });
+
+  it('сохраняет изменения группы', () => {
+    const group = makeGroup();
+    updateGroup(db, group.id, { name: 'Взрослые 16+', defaultLessonMinutes: 90 });
+
+    const updated = getGroup(db, group.id);
+    expect(updated?.name).toBe('Взрослые 16+');
+    expect(updated?.defaultLessonMinutes).toBe(90);
+  });
+
+  it('архивирование не трогает конспекты', () => {
+    const group = makeGroup();
+    makeLesson(group.id);
+    setGroupArchived(db, group.id, true);
+
+    expect(countGroupLessons(db, group.id)).toBe(1);
+    expect(listGroups(db, true)[0]?.lessonsCount).toBe(1);
   });
 
   it('удаляет уроки вместе с группой', () => {
@@ -159,7 +184,7 @@ describe('материалы живут отдельно от конспекто
   });
 });
 
-describe('поиск конспектов', () => {
+describe('лента конспектов группы', () => {
   it('ищет по названию урока и по тексту блоков', () => {
     const group = makeGroup();
     const lesson = makeLesson(group.id);
@@ -167,6 +192,37 @@ describe('поиск конспектов', () => {
 
     expect(listGroupLessons(db, group.id, { search: 'перекаты' })).toHaveLength(1);
     expect(listGroupLessons(db, group.id, { search: 'прыжки' })).toHaveLength(0);
+  });
+
+  it('ищет по цели занятия и не различает е и ё', () => {
+    const group = makeGroup();
+    const lesson = makeLesson(group.id);
+    updateLesson(db, lesson.id, { goal: 'Освоить перекат чёрез спину' });
+
+    expect(listGroupLessons(db, group.id, { search: 'ЧЕРЕЗ' })).toHaveLength(1);
+  });
+
+  it('переключает порядок: новые сверху или старые сверху', () => {
+    const group = makeGroup();
+    makeLesson(group.id, '2026-09-01');
+    makeLesson(group.id, '2026-09-15');
+
+    expect(listGroupLessons(db, group.id, { newestFirst: true }).map((l) => l.date)).toEqual([
+      '2026-09-15',
+      '2026-09-01',
+    ]);
+    expect(listGroupLessons(db, group.id, { newestFirst: false }).map((l) => l.date)).toEqual([
+      '2026-09-01',
+      '2026-09-15',
+    ]);
+  });
+
+  it('не показывает конспекты чужой группы', () => {
+    const kids = makeGroup('Дети 8–10');
+    const adults = makeGroup('Взрослые 16+');
+    makeLesson(kids.id);
+
+    expect(listGroupLessons(db, adults.id)).toHaveLength(0);
   });
 });
 
