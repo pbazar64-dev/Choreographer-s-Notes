@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DatabaseProvider } from '@/db/DatabaseProvider';
+import '@/lib/calendarLocale';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 export default function RootLayout() {
@@ -38,6 +39,11 @@ function RootNavigator() {
         <Stack.Screen name="group/[groupId]" options={{ title: 'Группа' }} />
         <Stack.Screen name="group/edit" options={{ presentation: 'modal', title: 'Группа' }} />
         <Stack.Screen name="lesson/[lessonId]/index" options={{ title: 'Конспект' }} />
+        <Stack.Screen name="lesson/[lessonId]/run" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="lesson/new"
+          options={{ presentation: 'modal', title: 'Новый конспект' }}
+        />
         <Stack.Screen
           name="lesson/[lessonId]/edit"
           options={{ presentation: 'modal', title: 'Конспект урока' }}
