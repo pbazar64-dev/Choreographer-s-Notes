@@ -1,4 +1,5 @@
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useEffect, useRef } from 'react';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Linking, View } from 'react-native';
@@ -19,9 +20,12 @@ import { isAudioMaterial, isLinkMaterial } from '../types';
 export function MaterialPlayer({
   material,
   startTimeSec,
+  autoPlay = false,
 }: {
   material: Material;
   startTimeSec?: number | null;
+  /** В режиме урока материал должен играть с одного тапа */
+  autoPlay?: boolean;
 }) {
   if (isLinkMaterial(material.type)) {
     return <LinkPlayer material={material} />;
@@ -32,24 +36,27 @@ export function MaterialPlayer({
   }
 
   if (isAudioMaterial(material.type)) {
-    return <AudioPlayerView material={material} startTimeSec={startTimeSec} />;
+    return <AudioPlayerView material={material} startTimeSec={startTimeSec} autoPlay={autoPlay} />;
   }
 
-  return <VideoPlayerView material={material} startTimeSec={startTimeSec} />;
+  return <VideoPlayerView material={material} startTimeSec={startTimeSec} autoPlay={autoPlay} />;
 }
 
 function VideoPlayerView({
   material,
   startTimeSec,
+  autoPlay,
 }: {
   material: Material;
   startTimeSec?: number | null;
+  autoPlay?: boolean;
 }) {
   const theme = useTheme();
   const source = material.localPath ? toAbsoluteUri(material.localPath) : null;
 
   const player = useVideoPlayer(source ? { uri: source } : null, (instance) => {
     if (startTimeSec) instance.currentTime = startTimeSec;
+    if (autoPlay) instance.play();
   });
 
   if (!source) return <MissingFile />;
@@ -73,14 +80,25 @@ function VideoPlayerView({
 function AudioPlayerView({
   material,
   startTimeSec,
+  autoPlay,
 }: {
   material: Material;
   startTimeSec?: number | null;
+  autoPlay?: boolean;
 }) {
   const theme = useTheme();
   const source = material.localPath ? toAbsoluteUri(material.localPath) : null;
   const player = useAudioPlayer(source ? { uri: source } : null);
   const status = useAudioPlayerStatus(player);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (!autoPlay || startedRef.current || !status.isLoaded) return;
+
+    startedRef.current = true;
+    if (startTimeSec) player.seekTo(startTimeSec);
+    player.play();
+  }, [autoPlay, player, startTimeSec, status.isLoaded]);
 
   if (!source) return <MissingFile />;
 

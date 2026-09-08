@@ -14,10 +14,12 @@ export function MaterialPlayerSheet({
   item,
   onClose,
   onEdit,
+  autoPlay = false,
 }: {
   item: BlockMaterialItem | null;
   onClose: () => void;
-  onEdit: (item: BlockMaterialItem) => void;
+  onEdit?: (item: BlockMaterialItem) => void;
+  autoPlay?: boolean;
 }) {
   const theme = useTheme();
 
@@ -43,7 +45,11 @@ export function MaterialPlayerSheet({
             <ScrollView contentContainerStyle={{ gap: theme.spacing.md }}>
               <Text variant="subtitle">{item.material.title}</Text>
 
-              <MaterialPlayer material={item.material} startTimeSec={item.startTimeSec} />
+              <MaterialPlayer
+                material={item.material}
+                startTimeSec={item.startTimeSec}
+                autoPlay={autoPlay}
+              />
 
               {item.startTimeSec != null ? (
                 <Text variant="caption" tone="muted">
@@ -54,12 +60,14 @@ export function MaterialPlayerSheet({
               {item.comment.trim() ? <Text scaled>{item.comment.trim()}</Text> : null}
 
               <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-                <Button
-                  title="Комментарий и таймкод"
-                  variant="secondary"
-                  style={{ flex: 1 }}
-                  onPress={() => onEdit(item)}
-                />
+                {onEdit ? (
+                  <Button
+                    title="Комментарий и таймкод"
+                    variant="secondary"
+                    style={{ flex: 1 }}
+                    onPress={() => onEdit(item)}
+                  />
+                ) : null}
                 <Button title="Закрыть" style={{ flex: 1 }} onPress={onClose} />
               </View>
             </ScrollView>
