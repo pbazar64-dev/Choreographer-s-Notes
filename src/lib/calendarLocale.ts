@@ -36,11 +36,19 @@ const locale = {
 };
 
 const config = LocaleConfig as unknown as {
-  locales: Record<string, typeof locale>;
-  defaultLocale: string;
+  locales?: Record<string, typeof locale>;
+  defaultLocale?: string;
 };
 
-config.locales.ru = locale;
-config.defaultLocale = 'ru';
+// Побочный эффект при импорте: если библиотека изменит формат, приложение
+// должно остаться с английским календарём, а не упасть при запуске.
+try {
+  if (config.locales) {
+    config.locales.ru = locale;
+    config.defaultLocale = 'ru';
+  }
+} catch {
+  // Календарь останется на локали по умолчанию.
+}
 
 export const CALENDAR_FIRST_DAY = 1;

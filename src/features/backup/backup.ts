@@ -2,7 +2,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as SQLite from 'expo-sqlite';
-import { zip, unzip } from 'react-native-zip-archive';
 
 import { DATABASE_NAME, closeDatabase, getConnection, getDb, reopenDatabase } from '@/db/client';
 import { setSetting, SETTINGS_KEYS } from '@/db/repositories/settings.repo';
@@ -28,6 +27,16 @@ export const BACKUP_STEP_LABELS: Record<BackupStep, string> = {
   restore: 'Восстанавливаю данные',
   done: 'Готово',
 };
+
+/**
+ * Библиотека архивации подключается лениво, при первом бэкапе: expo-router
+ * загружает все экраны при старте, и падение нативного модуля на импорте
+ * уронило бы всё приложение, а не только резервное копирование.
+ */
+function zipArchive() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require('react-native-zip-archive') as typeof import('react-native-zip-archive');
+}
 
 /** react-native-zip-archive работает с путями файловой системы, а не с file:// URI. */
 function toPath(uri: string): string {
@@ -90,7 +99,7 @@ export async function exportBackup(onStep?: (step: BackupStep) => void): Promise
     onStep?.('archive');
     const archive = new File(Paths.cache, buildBackupFileName(new Date()));
     deleteQuietly(archive);
-    await zip(toPath(staging.uri), toPath(archive.uri));
+    await zipArchive().zip(toPath(staging.uri), toPath(archive.uri));
 
     onStep?.('share');
     if (await Sharing.isAvailableAsync()) {
@@ -126,7 +135,7 @@ export async function importBackup(
   staging.create({ intermediates: true, idempotent: true });
 
   try {
-    await unzip(toPath(pickedUri), toPath(staging.uri));
+    await zipArchive().unzip(toPath(pickedUri), toPath(staging.uri));
 
     const root = findBackupRoot(staging);
     if (!root) {

@@ -6,18 +6,21 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DatabaseProvider } from '@/db/DatabaseProvider';
 import '@/lib/calendarLocale';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { ErrorBoundary } from '@/ui';
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <DatabaseProvider>
-            <RootNavigator />
-          </DatabaseProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <DatabaseProvider>
+              <RootNavigator />
+            </DatabaseProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 
