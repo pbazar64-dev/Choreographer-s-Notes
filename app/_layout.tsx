@@ -46,6 +46,11 @@ function RootNavigator() {
           name="lesson/[lessonId]/block"
           options={{ presentation: 'modal', title: 'Блок урока' }}
         />
+        <Stack.Screen name="material/[materialId]" options={{ title: 'Материал' }} />
+        <Stack.Screen
+          name="material/add-link"
+          options={{ presentation: 'modal', title: 'Ссылка на материал' }}
+        />
       </Stack>
     </>
   );
