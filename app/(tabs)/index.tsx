@@ -9,6 +9,7 @@ import {
   listLessonsByDate,
 } from '@/db/repositories/lessons.repo';
 import { useDbQuery } from '@/db/useDbQuery';
+import { BackupReminder } from '@/features/backup/components/BackupReminder';
 import { WeekStrip, type DayDots } from '@/features/calendar/components/WeekStrip';
 import { LessonCard } from '@/features/lessons/components/LessonCard';
 import { addDays, formatFullDate, formatLessonDate, todayKey } from '@/lib/date';
@@ -56,6 +57,8 @@ export default function CalendarScreen() {
       <ScrollView
         contentContainerStyle={{ gap: theme.spacing.md, paddingVertical: theme.spacing.lg }}
       >
+        <BackupReminder />
+
         {upcoming ? (
           <Card accentColor={upcoming.groupColorHex}>
             <Text variant="caption" tone="muted">

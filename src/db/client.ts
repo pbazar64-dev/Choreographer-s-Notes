@@ -12,11 +12,38 @@ export const DATABASE_NAME = 'choreonotes.db';
  */
 export type AppDatabase = BaseSQLiteDatabase<'sync', unknown, typeof schema>;
 
-export const sqliteConnection = SQLite.openDatabaseSync(DATABASE_NAME, {
-  enableChangeListener: true,
-});
+function openConnection(): SQLite.SQLiteDatabase {
+  const connection = SQLite.openDatabaseSync(DATABASE_NAME, { enableChangeListener: true });
+  // Без этого SQLite молча игнорирует ON DELETE CASCADE.
+  connection.execSync('PRAGMA foreign_keys = ON;');
+  return connection;
+}
 
-// Без этого SQLite молча игнорирует ON DELETE CASCADE.
-sqliteConnection.execSync('PRAGMA foreign_keys = ON;');
+/**
+ * Подключение пересоздаётся при восстановлении из резервной копии: файл базы
+ * подменяется целиком, поэтому старое подключение нужно закрыть, а не переиспользовать.
+ */
+let connection = openConnection();
+let database = drizzle(connection, { schema }) as unknown as AppDatabase;
 
-export const db = drizzle(sqliteConnection, { schema }) as unknown as AppDatabase;
+export function getDb(): AppDatabase {
+  return database;
+}
+
+export function getConnection(): SQLite.SQLiteDatabase {
+  return connection;
+}
+
+export function closeDatabase(): void {
+  try {
+    connection.closeSync();
+  } catch {
+    // Уже закрыта — не повод падать при восстановлении.
+  }
+}
+
+export function reopenDatabase(): AppDatabase {
+  connection = openConnection();
+  database = drizzle(connection, { schema }) as unknown as AppDatabase;
+  return database;
+}

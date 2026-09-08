@@ -3,14 +3,16 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import migrations from './migrations/migrations';
-import { db, sqliteConnection } from './client';
+import { getConnection, getDb } from './client';
+import { loadPreferences } from '@/features/settings/preferences';
+
 import { seedIfEmpty } from './seed';
 
 /** Включать ли сид тестовыми данными. На боевую сборку — false. */
 const ENABLE_SEED = __DEV__;
 
 export function DatabaseProvider({ children }: { children: ReactNode }) {
-  const { success, error } = useMigrations(sqliteConnection as never, migrations);
+  const { success, error } = useMigrations(getConnection() as never, migrations);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -20,8 +22,9 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
     // Сид выносим из тела эффекта, чтобы не дёргать setState синхронно при монтировании.
     void Promise.resolve().then(() => {
       if (ENABLE_SEED) {
-        seedIfEmpty(db);
+        seedIfEmpty(getDb());
       }
+      loadPreferences(getDb());
       if (!cancelled) setReady(true);
     });
 

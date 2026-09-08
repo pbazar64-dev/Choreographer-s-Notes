@@ -15,12 +15,16 @@ type UiPrefsState = {
   setThemePreference: (value: ThemePreference) => void;
   setLessonFontScale: (value: FontScale) => void;
   setLessonsNewestFirst: (value: boolean) => void;
-  hydrate: (values: { themePreference: ThemePreference; lessonFontScale: FontScale }) => void;
+  hydrate: (values: {
+    themePreference: ThemePreference;
+    lessonFontScale: FontScale;
+    lessonsNewestFirst: boolean;
+  }) => void;
 };
 
 /**
- * Состояние интерфейса. Сохранение в app_settings подключается на Э8,
- * здесь — только источник правды для текущего сеанса.
+ * Состояние интерфейса. Значения читаются из app_settings при запуске
+ * (см. features/settings/preferences) и туда же сохраняются при изменении.
  */
 export const useUiPrefs = create<UiPrefsState>((set) => ({
   themePreference: 'system',
