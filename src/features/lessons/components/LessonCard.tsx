@@ -20,7 +20,9 @@ export function LessonCard({
 
   return (
     <Card onPress={onPress} accentColor={lesson.groupColorHex}>
-      <View style={{ flexDirection: 'row', gap: theme.spacing.sm, justifyContent: 'space-between' }}>
+      <View
+        style={{ flexDirection: 'row', gap: theme.spacing.sm, justifyContent: 'space-between' }}
+      >
         <Text variant="caption" tone="muted">
           Урок {lesson.orderNumber}
           {showGroupName ? ` · ${lesson.groupName}` : ''}

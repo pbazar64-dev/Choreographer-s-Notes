@@ -42,9 +42,7 @@ export default function GroupsScreen() {
             <View style={{ paddingTop: theme.spacing.md }}>
               <Button
                 variant="ghost"
-                title={
-                  showArchived ? 'Скрыть архив' : `Показать архив (${archivedCount})`
-                }
+                title={showArchived ? 'Скрыть архив' : `Показать архив (${archivedCount})`}
                 onPress={() => setShowArchived((value) => !value)}
               />
             </View>

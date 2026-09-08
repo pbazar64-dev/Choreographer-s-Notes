@@ -4,6 +4,7 @@ import { matchesSearch, normalizeSearch } from '@/lib/search';
 
 import type { AppDatabase } from '../client';
 import {
+  blockMaterials,
   groups,
   lessonBlocks,
   lessons,
@@ -159,4 +160,79 @@ export function setLessonStatus(db: AppDatabase, id: number, status: LessonStatu
 /** Удаляет урок вместе с блоками и связками, но не трогает материалы общей базы. */
 export function deleteLesson(db: AppDatabase, id: number): void {
   db.delete(lessons).where(eq(lessons.id, id)).run();
+}
+
+/**
+ * Дублирует конспект в новую дату: копируются блоки и связи с материалами,
+ * сами материалы не копируются — они остаются одной записью в общей базе.
+ */
+export function duplicateLesson(db: AppDatabase, lessonId: number, newDate: string): Lesson | null {
+  const source = db.select().from(lessons).where(eq(lessons.id, lessonId)).get();
+  if (!source) return null;
+
+  return db.transaction((tx) => {
+    const nextOrder = tx
+      .select({ value: sql<number>`coalesce(max(${lessons.orderNumber}) + 1, 1)` })
+      .from(lessons)
+      .where(eq(lessons.groupId, source.groupId))
+      .get();
+
+    const copy = tx
+      .insert(lessons)
+      .values({
+        groupId: source.groupId,
+        orderNumber: Number(nextOrder?.value ?? 1),
+        title: source.title,
+        date: newDate,
+        startTime: source.startTime,
+        plannedMinutes: source.plannedMinutes,
+        status: 'draft',
+        goal: source.goal,
+      })
+      .returning()
+      .get();
+
+    const sourceBlocks = tx
+      .select()
+      .from(lessonBlocks)
+      .where(eq(lessonBlocks.lessonId, lessonId))
+      .orderBy(asc(lessonBlocks.sortOrder))
+      .all();
+
+    for (const block of sourceBlocks) {
+      const newBlock = tx
+        .insert(lessonBlocks)
+        .values({
+          lessonId: copy.id,
+          sortOrder: block.sortOrder,
+          title: block.title,
+          kind: block.kind,
+          plannedMinutes: block.plannedMinutes,
+          notes: block.notes,
+        })
+        .returning()
+        .get();
+
+      const links = tx
+        .select()
+        .from(blockMaterials)
+        .where(eq(blockMaterials.blockId, block.id))
+        .orderBy(asc(blockMaterials.sortOrder))
+        .all();
+
+      for (const link of links) {
+        tx.insert(blockMaterials)
+          .values({
+            blockId: newBlock.id,
+            materialId: link.materialId,
+            sortOrder: link.sortOrder,
+            comment: link.comment,
+            startTimeSec: link.startTimeSec,
+          })
+          .run();
+      }
+    }
+
+    return copy;
+  });
 }

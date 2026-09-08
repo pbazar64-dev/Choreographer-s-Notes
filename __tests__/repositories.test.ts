@@ -8,6 +8,7 @@ import {
 import {
   createBlock,
   listBlocks,
+  listBlocksWithMaterials,
   reorderBlocks,
   sumPlannedMinutes,
 } from '@/db/repositories/blocks.repo';
@@ -24,6 +25,7 @@ import {
 import {
   createLesson,
   deleteLesson,
+  duplicateLesson,
   listGroupLessons,
   updateLesson,
 } from '@/db/repositories/lessons.repo';
@@ -232,5 +234,70 @@ describe('настройки', () => {
     setSetting(db, SETTINGS_KEYS.themePreference, 'light');
 
     expect(getSetting(db, SETTINGS_KEYS.themePreference)).toBe('light');
+  });
+});
+
+describe('дублирование конспекта', () => {
+  it('копирует блоки и связи с материалами, но не сами материалы', () => {
+    const group = makeGroup();
+    const lesson = makeLesson(group.id, '2026-09-10');
+    const warmup = createBlock(db, {
+      lessonId: lesson.id,
+      title: 'Разминка',
+      kind: 'warmup',
+      plannedMinutes: 15,
+      notes: 'По кругу',
+      sortOrder: 0,
+    });
+    createBlock(db, {
+      lessonId: lesson.id,
+      title: 'Кросс',
+      kind: 'cross',
+      plannedMinutes: 25,
+      sortOrder: 1,
+    });
+    const material = createMaterial(db, {
+      type: 'video_link',
+      title: 'Разминка на видео',
+      url: 'https://example.com/v',
+    });
+    attachMaterialToBlock(db, {
+      blockId: warmup.id,
+      materialId: material.id,
+      comment: 'Первые 3 минуты',
+      startTimeSec: 12,
+    });
+
+    const copy = duplicateLesson(db, lesson.id, '2026-09-17');
+    expect(copy).not.toBeNull();
+    if (!copy) return;
+
+    expect(copy.date).toBe('2026-09-17');
+    expect(copy.status).toBe('draft');
+    expect(copy.orderNumber).toBe(lesson.orderNumber + 1);
+
+    const copiedBlocks = listBlocksWithMaterials(db, copy.id);
+    expect(copiedBlocks.map((block) => block.title)).toEqual(['Разминка', 'Кросс']);
+    expect(sumPlannedMinutes(db, copy.id)).toBe(40);
+
+    // Материал в базе по-прежнему один, но используется уже в двух уроках.
+    expect(listMaterials(db)).toHaveLength(1);
+    expect(getMaterialUsage(db, material.id)).toHaveLength(2);
+
+    const copiedLink = copiedBlocks[0]?.materials[0];
+    expect(copiedLink?.materialId).toBe(material.id);
+    expect(copiedLink?.comment).toBe('Первые 3 минуты');
+    expect(copiedLink?.startTimeSec).toBe(12);
+  });
+
+  it('не трогает исходный конспект', () => {
+    const group = makeGroup();
+    const lesson = makeLesson(group.id, '2026-09-10');
+    createBlock(db, { lessonId: lesson.id, title: 'Разминка', plannedMinutes: 15 });
+
+    duplicateLesson(db, lesson.id, '2026-09-17');
+
+    expect(listBlocks(db, lesson.id)).toHaveLength(1);
+    expect(listGroupLessons(db, group.id)).toHaveLength(2);
   });
 });

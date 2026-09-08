@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, FlatList, View } from 'react-native';
 
 import { getGroup, setGroupArchived } from '@/db/repositories/groups.repo';
+import { createLessonForGroup } from '@/features/lessons/createLesson';
 import { listGroupLessons } from '@/db/repositories/lessons.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
@@ -58,6 +59,13 @@ export default function GroupLessonsScreen() {
         },
       ],
     );
+  }
+
+  function handleCreateLesson() {
+    if (!group) return;
+    const lesson = createLessonForGroup(db, group);
+    bumpDbRevision();
+    router.push(`/lesson/${lesson.id}`);
   }
 
   return (
@@ -119,7 +127,9 @@ export default function GroupLessonsScreen() {
           ) : (
             <EmptyState
               title="В группе пока нет конспектов"
-              description="Создание уроков появится на этапе Э5, вместе с календарём."
+              description="Конспект — это план одного урока: блоки, время и материалы."
+              actionTitle="Новый конспект"
+              onAction={handleCreateLesson}
             />
           )
         }
@@ -127,6 +137,12 @@ export default function GroupLessonsScreen() {
           <LessonCard lesson={item} onPress={() => router.push(`/lesson/${item.id}`)} />
         )}
       />
+
+      {lessons.length > 0 ? (
+        <View style={{ paddingBottom: theme.spacing.lg }}>
+          <Button title="Новый конспект" onPress={handleCreateLesson} />
+        </View>
+      ) : null}
     </Screen>
   );
 }

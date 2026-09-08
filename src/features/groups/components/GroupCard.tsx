@@ -32,7 +32,8 @@ export function GroupCard({ group, onPress }: { group: GroupListItem; onPress: (
       ) : null}
 
       <Text variant="caption" tone="muted">
-        {formatLessonsCount(group.lessonsCount)} · урок {lessonDurationLabel(group.defaultLessonMinutes)}
+        {formatLessonsCount(group.lessonsCount)} · урок{' '}
+        {lessonDurationLabel(group.defaultLessonMinutes)}
         {group.lastLessonDate ? ` · последний ${formatFullDate(group.lastLessonDate)}` : ''}
       </Text>
     </Card>

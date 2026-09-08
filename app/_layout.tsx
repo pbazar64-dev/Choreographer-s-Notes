@@ -36,11 +36,16 @@ function RootNavigator() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="group/[groupId]" options={{ title: 'Группа' }} />
-        <Stack.Screen
-          name="group/edit"
-          options={{ presentation: 'modal', title: 'Группа' }}
-        />
+        <Stack.Screen name="group/edit" options={{ presentation: 'modal', title: 'Группа' }} />
         <Stack.Screen name="lesson/[lessonId]/index" options={{ title: 'Конспект' }} />
+        <Stack.Screen
+          name="lesson/[lessonId]/edit"
+          options={{ presentation: 'modal', title: 'Конспект урока' }}
+        />
+        <Stack.Screen
+          name="lesson/[lessonId]/block"
+          options={{ presentation: 'modal', title: 'Блок урока' }}
+        />
       </Stack>
     </>
   );
