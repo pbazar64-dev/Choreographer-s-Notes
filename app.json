@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Конспекты хореографии",
-    "slug": "choreographer-notes",
+    "slug": "pbazar",
+    "owner": "pbazars-team",
     "version": "1.0.0",
     "scheme": "choreonotes",
     "orientation": "default",
