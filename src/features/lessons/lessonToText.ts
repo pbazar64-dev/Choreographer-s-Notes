@@ -3,6 +3,7 @@ import type { LessonListItem } from '@/db/repositories/lessons.repo';
 import { blockKindLabel } from '@/constants/blockKinds';
 import { formatFullDate } from '@/lib/date';
 import { getLessonTimeSummary } from '@/lib/lessonTime';
+import { formatTimecode } from '@/lib/timecode';
 
 /** Конспект как обычный текст — для кнопки «Поделиться». */
 export function lessonToText(
@@ -42,10 +43,4 @@ export function lessonToText(
     .join('\n\n');
 
   return [header, body, summary.label].filter(Boolean).join('\n\n');
-}
-
-export function formatTimecode(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }

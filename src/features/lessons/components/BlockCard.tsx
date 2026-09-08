@@ -1,23 +1,27 @@
 import { Pressable, View } from 'react-native';
 
 import { blockKindLabel } from '@/constants/blockKinds';
-import type { BlockWithMaterials } from '@/db/repositories/blocks.repo';
+import type { BlockMaterialItem, BlockWithMaterials } from '@/db/repositories/blocks.repo';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Badge, Card, Text } from '@/ui';
+import { Button, Badge, Card, Text } from '@/ui';
 
-import { formatTimecode } from '../lessonToText';
+import { MaterialStrip } from './MaterialStrip';
 
 export function BlockCard({
   block,
   index,
   onPress,
   onLongPress,
+  onAddMaterial,
+  onOpenMaterial,
   isActive = false,
 }: {
   block: BlockWithMaterials;
   index: number;
   onPress: () => void;
   onLongPress?: () => void;
+  onAddMaterial: () => void;
+  onOpenMaterial: (item: BlockMaterialItem) => void;
   isActive?: boolean;
 }) {
   const theme = useTheme();
@@ -63,17 +67,14 @@ export function BlockCard({
           </Text>
         ) : null}
 
-        {block.materials.length > 0 ? (
-          <View style={{ gap: theme.spacing.xs, paddingTop: theme.spacing.sm }}>
-            {block.materials.map((item) => (
-              <Text key={item.id} variant="caption" tone="muted">
-                {item.material.title}
-                {item.startTimeSec != null ? ` · с ${formatTimecode(item.startTimeSec)}` : ''}
-                {item.comment.trim() ? ` · ${item.comment.trim()}` : ''}
-              </Text>
-            ))}
-          </View>
-        ) : null}
+        <MaterialStrip items={block.materials} onPressItem={onOpenMaterial} />
+
+        <Button
+          title={block.materials.length > 0 ? 'Добавить материал' : 'Добавить видео или музыку'}
+          variant="ghost"
+          onPress={onAddMaterial}
+          style={{ alignSelf: 'flex-start', marginTop: theme.spacing.xs }}
+        />
       </Card>
     </Pressable>
   );

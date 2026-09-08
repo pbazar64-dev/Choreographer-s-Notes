@@ -204,3 +204,52 @@ export function removeTagFromMaterial(db: AppDatabase, materialId: number, tagId
     .where(and(eq(materialTags.materialId, materialId), eq(materialTags.tagId, tagId)))
     .run();
 }
+
+/** Материалы одного блока — для ленты превью в конспекте. */
+export function listBlockMaterials(db: AppDatabase, blockId: number) {
+  return db
+    .select({ link: blockMaterials, material: materials })
+    .from(blockMaterials)
+    .innerJoin(materials, eq(materials.id, blockMaterials.materialId))
+    .where(eq(blockMaterials.blockId, blockId))
+    .orderBy(asc(blockMaterials.sortOrder))
+    .all()
+    .map((row) => ({ ...row.link, material: row.material }));
+}
+
+export function getBlockMaterial(db: AppDatabase, id: number) {
+  const row = db
+    .select({ link: blockMaterials, material: materials })
+    .from(blockMaterials)
+    .innerJoin(materials, eq(materials.id, blockMaterials.materialId))
+    .where(eq(blockMaterials.id, id))
+    .get();
+
+  return row ? { ...row.link, material: row.material } : null;
+}
+
+/** Прикрепляет несколько материалов сразу — множественный выбор «из базы». */
+export function attachMaterialsToBlock(
+  db: AppDatabase,
+  blockId: number,
+  materialIds: readonly number[],
+): number {
+  if (materialIds.length === 0) return 0;
+
+  return db.transaction((tx) => {
+    const start = tx
+      .select({ value: sql<number>`coalesce(max(${blockMaterials.sortOrder}) + 1, 0)` })
+      .from(blockMaterials)
+      .where(eq(blockMaterials.blockId, blockId))
+      .get();
+
+    let sortOrder = Number(start?.value ?? 0);
+
+    for (const materialId of materialIds) {
+      tx.insert(blockMaterials).values({ blockId, materialId, sortOrder }).run();
+      sortOrder += 1;
+    }
+
+    return materialIds.length;
+  });
+}

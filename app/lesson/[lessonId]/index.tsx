@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Share, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 
@@ -7,6 +8,7 @@ import {
   listBlocksWithMaterials,
   nextBlockSortOrder,
   reorderBlocks,
+  type BlockMaterialItem,
   type BlockWithMaterials,
 } from '@/db/repositories/blocks.repo';
 import { duplicateLesson, getLesson } from '@/db/repositories/lessons.repo';
@@ -15,6 +17,7 @@ import { useDbQuery } from '@/db/useDbQuery';
 import { BlockCard } from '@/features/lessons/components/BlockCard';
 import { LessonHeaderCard } from '@/features/lessons/components/LessonHeaderCard';
 import { LessonTimeBar } from '@/features/lessons/components/LessonTimeBar';
+import { MaterialPlayerSheet } from '@/features/lessons/components/MaterialPlayerSheet';
 import { lessonToText } from '@/features/lessons/lessonToText';
 import { addDays, formatFullDate } from '@/lib/date';
 import { getLessonTimeSummary } from '@/lib/lessonTime';
@@ -28,6 +31,8 @@ export default function LessonScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{ lessonId: string }>();
   const lessonId = Number(params.lessonId);
+
+  const [openedMaterial, setOpenedMaterial] = useState<BlockMaterialItem | null>(null);
 
   const lesson = useDbQuery((database) => getLesson(database, lessonId), [lessonId]);
   const blocks = useDbQuery((database) => listBlocksWithMaterials(database, lessonId), [lessonId]);
@@ -145,6 +150,8 @@ export default function LessonScreen() {
             isActive={isActive}
             onLongPress={drag}
             onPress={() => router.push(`/lesson/${lessonId}/block?blockId=${item.id}`)}
+            onAddMaterial={() => router.push(`/lesson/${lessonId}/attach?blockId=${item.id}`)}
+            onOpenMaterial={setOpenedMaterial}
           />
         )}
       />
@@ -162,6 +169,15 @@ export default function LessonScreen() {
         <LessonTimeBar summary={summary} />
         {blocks.length > 0 ? <Button title="Добавить блок" onPress={handleAddBlock} /> : null}
       </View>
+
+      <MaterialPlayerSheet
+        item={openedMaterial}
+        onClose={() => setOpenedMaterial(null)}
+        onEdit={(item) => {
+          setOpenedMaterial(null);
+          router.push(`/lesson/${lessonId}/attachment?blockMaterialId=${item.id}`);
+        }}
+      />
     </Screen>
   );
 }
