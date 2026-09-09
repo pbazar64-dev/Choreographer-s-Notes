@@ -1,6 +1,9 @@
 import { View } from 'react-native';
 
 import type { GroupListItem } from '@/db/repositories/groups.repo';
+import { listGroupSlots } from '@/db/repositories/schedule.repo';
+import { useDbQuery } from '@/db/useDbQuery';
+import { formatScheduleSummary } from '@/features/schedule/schedule';
 import { lessonDurationLabel } from '@/constants/lessonDurations';
 import { formatFullDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -8,6 +11,10 @@ import { Badge, Card, Text } from '@/ui';
 
 export function GroupCard({ group, onPress }: { group: GroupListItem; onPress: () => void }) {
   const theme = useTheme();
+  const schedule = useDbQuery(
+    (db) => formatScheduleSummary(listGroupSlots(db, group.id)),
+    [group.id],
+  );
 
   return (
     <Card onPress={onPress} accentColor={group.colorHex}>
@@ -28,6 +35,12 @@ export function GroupCard({ group, onPress }: { group: GroupListItem; onPress: (
       {group.description ? (
         <Text tone="muted" numberOfLines={2}>
           {group.description}
+        </Text>
+      ) : null}
+
+      {schedule ? (
+        <Text variant="caption" tone="accent">
+          {schedule}
         </Text>
       ) : null}
 

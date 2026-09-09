@@ -8,7 +8,12 @@ import { todayKey } from '@/lib/date';
  * Новый конспект в группе: номер по порядку, длительность из настроек группы.
  * Шаблон применяется отдельно, на экране выбора шаблона.
  */
-export function createLessonForGroup(db: AppDatabase, group: Group, dateKey = todayKey()) {
+export function createLessonForGroup(
+  db: AppDatabase,
+  group: Group,
+  dateKey = todayKey(),
+  options: { startTime?: string | null; plannedMinutes?: number } = {},
+) {
   const orderNumber = nextLessonOrderNumber(db, group.id);
 
   return createLesson(db, {
@@ -16,7 +21,8 @@ export function createLessonForGroup(db: AppDatabase, group: Group, dateKey = to
     orderNumber,
     title: `Урок ${orderNumber}`,
     date: dateKey,
-    plannedMinutes: group.defaultLessonMinutes,
-    status: 'draft',
+    startTime: options.startTime ?? null,
+    plannedMinutes: options.plannedMinutes ?? group.defaultLessonMinutes,
+    status: options.startTime ? 'planned' : 'draft',
   });
 }

@@ -11,11 +11,14 @@ import {
   getGroup,
   updateGroup,
 } from '@/db/repositories/groups.repo';
+import { listGroupSlots, replaceGroupSlots } from '@/db/repositories/schedule.repo';
 import { listTemplatesForGroup } from '@/db/repositories/templates.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
 import { ColorPicker } from '@/features/groups/components/ColorPicker';
 import { DurationPicker } from '@/features/groups/components/DurationPicker';
+import { ScheduleEditor, type ScheduleDraft } from '@/features/schedule/components/ScheduleEditor';
+import { isValidTime, slotDurationMinutes } from '@/features/schedule/schedule';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button, Screen, Text, TextField } from '@/ui';
@@ -46,11 +49,44 @@ export default function GroupEditScreen() {
     (database) => (groupId ? listTemplatesForGroup(database, groupId) : []),
     [groupId],
   );
+  const savedSlots = useDbQuery(
+    (database) => (groupId ? listGroupSlots(database, groupId) : []),
+    [groupId],
+  );
+
+  const [schedule, setSchedule] = useState<ScheduleDraft>(() =>
+    Object.fromEntries(
+      savedSlots.map((slot) => [
+        slot.weekday,
+        { startTime: slot.startTime, endTime: slot.endTime },
+      ]),
+    ),
+  );
 
   function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
       setError('Название обязательно');
+      return;
+    }
+
+    const slots = Object.entries(schedule)
+      .filter(([, slot]) => slot)
+      .map(([weekday, slot]) => ({
+        weekday: Number(weekday),
+        startTime: slot?.startTime.trim() ?? '',
+        endTime: slot?.endTime.trim() ?? '',
+      }));
+
+    const badSlot = slots.find(
+      (slot) =>
+        !isValidTime(slot.startTime) ||
+        !isValidTime(slot.endTime) ||
+        slotDurationMinutes(slot.startTime, slot.endTime) <= 0,
+    );
+
+    if (badSlot) {
+      setError('Проверьте время в расписании: формат ЧЧ:ММ, окончание позже начала');
       return;
     }
 
@@ -62,13 +98,15 @@ export default function GroupEditScreen() {
         defaultLessonMinutes: minutes,
         defaultTemplateId,
       });
+      replaceGroupSlots(db, groupId, slots);
     } else {
-      createGroup(db, {
+      const created = createGroup(db, {
         name: trimmed,
         description: description.trim(),
         colorHex,
         defaultLessonMinutes: minutes,
       });
+      replaceGroupSlots(db, created.id, slots);
     }
 
     bumpDbRevision();
@@ -127,6 +165,8 @@ export default function GroupEditScreen() {
         />
 
         <ColorPicker value={colorHex} onChange={setColorHex} />
+
+        <ScheduleEditor value={schedule} onChange={setSchedule} />
 
         <DurationPicker
           label="Длительность урока по умолчанию"

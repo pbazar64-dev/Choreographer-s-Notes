@@ -74,6 +74,49 @@ export const lessonBlocks = sqliteTable(
   (table) => [index('lesson_blocks_lesson_idx').on(table.lessonId, table.sortOrder)],
 );
 
+/* ------------------------------------------------------- расписание группы */
+
+/**
+ * Постоянное расписание группы: в какие дни недели и в какое время идут занятия.
+ * Слот — это не урок, а повторяющееся «окно»: конспект по нему создаётся
+ * по желанию, а разовую отмену хранит schedule_exceptions.
+ */
+export const groupScheduleSlots = sqliteTable(
+  'group_schedule_slots',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    groupId: integer('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    /** День недели по ISO: 1 — понедельник, 7 — воскресенье */
+    weekday: integer('weekday').notNull(),
+    /** 'HH:mm' */
+    startTime: text('start_time').notNull(),
+    /** 'HH:mm' */
+    endTime: text('end_time').notNull(),
+  },
+  (table) => [index('group_schedule_group_idx').on(table.groupId, table.weekday)],
+);
+
+/** Отмена конкретного занятия по расписанию: «в этот четверг занятия нет». */
+export const scheduleExceptions = sqliteTable(
+  'schedule_exceptions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    slotId: integer('slot_id')
+      .notNull()
+      .references(() => groupScheduleSlots.id, { onDelete: 'cascade' }),
+    /** 'YYYY-MM-DD' */
+    date: text('date').notNull(),
+    comment: text('comment').notNull().default(''),
+    createdAt: integer('created_at').notNull().default(now),
+  },
+  (table) => [
+    unique('schedule_exceptions_unique').on(table.slotId, table.date),
+    index('schedule_exceptions_date_idx').on(table.date),
+  ],
+);
+
 /* -------------------------------------------------------------- материалы */
 
 export const materials = sqliteTable(
@@ -190,6 +233,19 @@ export const appSettings = sqliteTable('app_settings', {
 export const groupsRelations = relations(groups, ({ many }) => ({
   lessons: many(lessons),
   templates: many(templates),
+  scheduleSlots: many(groupScheduleSlots),
+}));
+
+export const groupScheduleSlotsRelations = relations(groupScheduleSlots, ({ one, many }) => ({
+  group: one(groups, { fields: [groupScheduleSlots.groupId], references: [groups.id] }),
+  exceptions: many(scheduleExceptions),
+}));
+
+export const scheduleExceptionsRelations = relations(scheduleExceptions, ({ one }) => ({
+  slot: one(groupScheduleSlots, {
+    fields: [scheduleExceptions.slotId],
+    references: [groupScheduleSlots.id],
+  }),
 }));
 
 export const lessonsRelations = relations(lessons, ({ one, many }) => ({
@@ -249,3 +305,6 @@ export type NewTemplate = typeof templates.$inferInsert;
 export type TemplateBlock = typeof templateBlocks.$inferSelect;
 export type NewTemplateBlock = typeof templateBlocks.$inferInsert;
 export type LessonStatus = Lesson['status'];
+export type GroupScheduleSlot = typeof groupScheduleSlots.$inferSelect;
+export type NewGroupScheduleSlot = typeof groupScheduleSlots.$inferInsert;
+export type ScheduleException = typeof scheduleExceptions.$inferSelect;
