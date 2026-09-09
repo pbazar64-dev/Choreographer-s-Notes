@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import {
   detachMaterialFromBlock,
@@ -89,7 +90,8 @@ export default function AttachmentScreen() {
     <Screen>
       <Stack.Screen options={{ title: attachment.material.title }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={32}
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
@@ -129,7 +131,7 @@ export default function AttachmentScreen() {
           Комментарий и таймкод относятся только к этому блоку. В других уроках тот же материал
           останется со своими настройками.
         </Text>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { deleteLesson, getLesson, updateLesson } from '@/db/repositories/lessons.repo';
 import { useDatabase } from '@/db/useDatabase';
@@ -96,7 +97,8 @@ export default function LessonEditScreen() {
     <Screen>
       <Stack.Screen options={{ title: 'Конспект урока' }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={32}
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
@@ -173,7 +175,7 @@ export default function LessonEditScreen() {
           <Button title="Отмена" variant="secondary" onPress={() => router.back()} />
           <Button title="Удалить конспект" variant="danger" onPress={handleDelete} />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { DEFAULT_BLOCK_KIND } from '@/constants/blockKinds';
 import { deleteBlock, getBlock, updateBlock } from '@/db/repositories/blocks.repo';
@@ -82,7 +83,8 @@ export default function BlockEditScreen() {
     <Screen>
       <Stack.Screen options={{ title: 'Блок урока' }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={32}
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
@@ -134,7 +136,7 @@ export default function BlockEditScreen() {
           <Button title="Отмена" variant="secondary" onPress={() => router.back()} />
           <Button title="Удалить блок" variant="danger" onPress={handleDelete} />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

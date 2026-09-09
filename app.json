@@ -14,7 +14,7 @@
     ],
     "android": {
       "package": "com.choreonotes.app",
-      "versionCode": 9,
+      "versionCode": 10,
       "adaptiveIcon": {
         "backgroundColor": "#F5F3EF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

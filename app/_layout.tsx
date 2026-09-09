@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DatabaseProvider } from '@/db/DatabaseProvider';
@@ -12,13 +13,15 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <ThemeProvider>
-            <DatabaseProvider>
-              <RootNavigator />
-            </DatabaseProvider>
-          </ThemeProvider>
-        </SafeAreaProvider>
+        <KeyboardProvider>
+          <SafeAreaProvider>
+            <ThemeProvider>
+              <DatabaseProvider>
+                <RootNavigator />
+              </DatabaseProvider>
+            </ThemeProvider>
+          </SafeAreaProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

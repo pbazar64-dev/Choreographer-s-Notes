@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, useWindowDimensions, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { getBlock } from '@/db/repositories/blocks.repo';
 import { attachMaterialsToBlock, listMaterials, listTags } from '@/db/repositories/materials.repo';
@@ -231,7 +232,11 @@ function NewMaterialTab({ blockId }: { blockId: number }) {
   }
 
   return (
-    <View style={{ flex: 1, gap: theme.spacing.lg }}>
+    <KeyboardAwareScrollView
+      bottomOffset={32}
+      contentContainerStyle={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text variant="caption" tone="muted">
         Новый материал попадёт и в этот блок, и в общую базу материалов — потом его можно будет
         выбрать в любом другом уроке.
@@ -314,6 +319,6 @@ function NewMaterialTab({ blockId }: { blockId: number }) {
 
         <Button title="Прикрепить ссылку" onPress={handleAddLink} disabled={progress !== null} />
       </View>
-    </View>
+    </KeyboardAwareScrollView>
   );
 }

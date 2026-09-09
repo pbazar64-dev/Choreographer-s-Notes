@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { DEFAULT_GROUP_COLOR } from '@/constants/groupColors';
 import { DEFAULT_LESSON_MINUTES } from '@/constants/lessonDurations';
@@ -140,7 +141,8 @@ export default function GroupEditScreen() {
     <Screen>
       <Stack.Screen options={{ title: groupId ? 'Редактирование группы' : 'Новая группа' }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={32}
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
@@ -211,7 +213,7 @@ export default function GroupEditScreen() {
             <Button title="Удалить группу" variant="danger" onPress={handleDelete} />
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

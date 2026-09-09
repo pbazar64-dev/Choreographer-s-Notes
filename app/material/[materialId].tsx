@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import {
   addTagToMaterial,
@@ -102,7 +103,8 @@ export default function MaterialScreen() {
     <Screen>
       <Stack.Screen options={{ title: material.title }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={32}
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
@@ -185,7 +187,7 @@ export default function MaterialScreen() {
         </View>
 
         <Button title="Удалить материал" variant="danger" onPress={handleDelete} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

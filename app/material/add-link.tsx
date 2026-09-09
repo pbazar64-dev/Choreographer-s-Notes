@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { useDatabase } from '@/db/useDatabase';
 import { createLinkMaterial } from '@/features/materials/importMaterials';
@@ -57,7 +58,8 @@ export default function AddLinkScreen() {
     <Screen>
       <Stack.Screen options={{ title: 'Ссылка на материал' }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
+        bottomOffset={32}
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
@@ -124,7 +126,7 @@ export default function AddLinkScreen() {
           <Button title="Сохранить" onPress={handleSave} />
           <Button title="Отмена" variant="secondary" onPress={() => router.back()} />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }
