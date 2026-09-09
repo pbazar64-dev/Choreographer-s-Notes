@@ -12,12 +12,15 @@ export function MaterialFilters({
   tags,
   activeTagIds,
   onToggleTag,
+  onDeleteTag,
 }: {
   activeTypes: readonly MaterialFilterCode[];
   onToggleType: (code: MaterialFilterCode) => void;
   tags: readonly Tag[];
   activeTagIds: readonly number[];
   onToggleTag: (tagId: number) => void;
+  /** Если передан — тег удаляется долгим нажатием */
+  onDeleteTag?: (tag: Tag) => void;
 }) {
   const theme = useTheme();
 
@@ -43,10 +46,17 @@ export function MaterialFilters({
                 label={tag.name}
                 active={activeTagIds.includes(tag.id)}
                 onPress={() => onToggleTag(tag.id)}
+                onLongPress={onDeleteTag ? () => onDeleteTag(tag) : undefined}
               />
             ))}
           </View>
         </ScrollView>
+      ) : null}
+
+      {tags.length > 0 && onDeleteTag ? (
+        <Text variant="caption" tone="muted">
+          Удерживайте тег, чтобы удалить его из базы.
+        </Text>
       ) : null}
     </View>
   );
@@ -56,10 +66,12 @@ export function FilterChip({
   label,
   active,
   onPress,
+  onLongPress,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
+  onLongPress?: () => void;
 }) {
   const theme = useTheme();
 
@@ -68,6 +80,7 @@ export function FilterChip({
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       onPress={onPress}
+      onLongPress={onLongPress}
       style={{
         alignItems: 'center',
         backgroundColor: active ? theme.colors.accent : theme.colors.surface,

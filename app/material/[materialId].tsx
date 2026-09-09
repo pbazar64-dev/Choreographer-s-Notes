@@ -5,6 +5,7 @@ import { Alert, ScrollView, View } from 'react-native';
 import {
   addTagToMaterial,
   ensureTag,
+  parseTagNames,
   getMaterial,
   getMaterialUsage,
   listMaterialTags,
@@ -57,11 +58,14 @@ export default function MaterialScreen() {
   }
 
   function handleAddTag() {
-    const name = newTag.trim();
-    if (!name) return;
+    const names = parseTagNames(newTag);
+    if (names.length === 0) return;
 
-    const tag = ensureTag(db, name);
-    addTagToMaterial(db, materialId, tag.id);
+    for (const name of names) {
+      const tag = ensureTag(db, name);
+      addTagToMaterial(db, materialId, tag.id);
+    }
+
     setNewTag('');
     bumpDbRevision();
   }

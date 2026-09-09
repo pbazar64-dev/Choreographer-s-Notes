@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { createAudioPlayer } from 'expo-audio';
 import { createVideoPlayer } from 'expo-video';
@@ -41,28 +40,6 @@ export async function pickMediaFiles(multiple = true): Promise<PickedFile[]> {
     mimeType: asset.mimeType ?? null,
     sizeBytes: asset.size ?? null,
   }));
-}
-
-/** Съёмка видео на камеру. Разрешение CAMERA спрашивается здесь и только здесь. */
-export async function recordVideo(): Promise<PickedFile | null> {
-  const permission = await ImagePicker.requestCameraPermissionsAsync();
-  if (!permission.granted) return null;
-
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ['videos'],
-    videoMaxDuration: 300,
-    quality: 1,
-  });
-
-  if (result.canceled || !result.assets[0]) return null;
-
-  const asset = result.assets[0];
-  return {
-    uri: asset.uri,
-    name: asset.fileName ?? `video-${Date.now()}.mp4`,
-    mimeType: asset.mimeType ?? 'video/mp4',
-    sizeBytes: asset.fileSize ?? null,
-  };
 }
 
 /** Кадр из видео как превью. Возвращает относительный путь или null. */

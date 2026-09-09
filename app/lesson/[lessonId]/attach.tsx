@@ -14,7 +14,7 @@ import {
   type ImportProgress,
 } from '@/features/materials/importMaterials';
 import { typesForFilters, type MaterialFilterCode } from '@/features/materials/types';
-import { linkSourceLabel, pickMediaFiles, recordVideo } from '@/lib/media';
+import { linkSourceLabel, pickMediaFiles } from '@/lib/media';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button, EmptyState, Screen, SegmentedControl, Text, TextField } from '@/ui';
@@ -248,24 +248,11 @@ function NewMaterialTab({ blockId }: { blockId: number }) {
         </View>
       ) : null}
 
-      <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-        <Button
-          title="Выбрать файлы"
-          style={{ flex: 1 }}
-          disabled={progress !== null}
-          onPress={async () => importAndAttach(await pickMediaFiles(true))}
-        />
-        <Button
-          title="Снять видео"
-          variant="secondary"
-          style={{ flex: 1 }}
-          disabled={progress !== null}
-          onPress={async () => {
-            const file = await recordVideo();
-            if (file) await importAndAttach([file]);
-          }}
-        />
-      </View>
+      <Button
+        title="Выбрать файлы"
+        disabled={progress !== null}
+        onPress={async () => importAndAttach(await pickMediaFiles(true))}
+      />
 
       <View style={{ gap: theme.spacing.md }}>
         <Text variant="subtitle">Или вставьте ссылку</Text>

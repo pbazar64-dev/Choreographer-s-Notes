@@ -253,3 +253,32 @@ export function attachMaterialsToBlock(
     return materialIds.length;
   });
 }
+
+/** Сколько материалов помечено тегом — показывается перед удалением тега. */
+export function countTagUsage(db: AppDatabase, tagId: number): number {
+  const row = db
+    .select({ value: sql<number>`count(*)` })
+    .from(materialTags)
+    .where(eq(materialTags.tagId, tagId))
+    .get();
+
+  return Number(row?.value ?? 0);
+}
+
+/** Удаляет тег из базы: каскадом снимается со всех материалов, сами они остаются. */
+export function deleteTag(db: AppDatabase, tagId: number): void {
+  db.delete(tags).where(eq(tags.id, tagId)).run();
+}
+
+/**
+ * Разбирает строку тегов: «партер, трюк» — это два тега, а не один.
+ * Подсказка в поле сама предлагает перечисление через запятую.
+ */
+export function parseTagNames(input: string): string[] {
+  const names = input
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  return [...new Set(names)];
+}

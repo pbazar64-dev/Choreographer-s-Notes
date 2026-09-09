@@ -2,14 +2,20 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, useWindowDimensions, View } from 'react-native';
 
-import { listMaterials, listTags, type MaterialFilters } from '@/db/repositories/materials.repo';
+import {
+  countTagUsage,
+  deleteTag,
+  listMaterials,
+  listTags,
+  type MaterialFilters,
+} from '@/db/repositories/materials.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
 import { MaterialFilters as MaterialFiltersRow } from '@/features/materials/components/MaterialFilters';
 import { MaterialTile } from '@/features/materials/components/MaterialTile';
 import { importFiles, type ImportProgress } from '@/features/materials/importMaterials';
 import { typesForFilters, type MaterialFilterCode } from '@/features/materials/types';
-import { pickMediaFiles, recordVideo } from '@/lib/media';
+import { pickMediaFiles } from '@/lib/media';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button, EmptyState, Screen, SegmentedControl, Text, TextField } from '@/ui';
@@ -69,15 +75,32 @@ export default function MaterialsScreen() {
     await runImport(await pickMediaFiles(true));
   }
 
-  async function handleRecordVideo() {
-    const file = await recordVideo();
-    if (!file) return;
-    await runImport([file]);
-  }
-
   function toggleType(code: MaterialFilterCode) {
     setTypeFilters((current) =>
       current.includes(code) ? current.filter((item) => item !== code) : [...current, code],
+    );
+  }
+
+  function handleDeleteTag(tag: { id: number; name: string }) {
+    const used = countTagUsage(db, tag.id);
+
+    Alert.alert(
+      `Удалить тег «${tag.name}»?`,
+      used > 0
+        ? `Тег снимется с материалов (${used}). Сами материалы и файлы останутся на месте.`
+        : 'Тег нигде не используется.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: () => {
+            deleteTag(db, tag.id);
+            setTagIds((current) => current.filter((id) => id !== tag.id));
+            bumpDbRevision();
+          },
+        },
+      ],
     );
   }
 
@@ -116,6 +139,7 @@ export default function MaterialsScreen() {
               tags={tags}
               activeTagIds={tagIds}
               onToggleTag={toggleTag}
+              onDeleteTag={handleDeleteTag}
             />
 
             <SegmentedControl
@@ -179,13 +203,6 @@ export default function MaterialsScreen() {
           title="Файлы"
           style={{ flex: 1 }}
           onPress={handlePickFiles}
-          disabled={progress !== null}
-        />
-        <Button
-          title="Снять видео"
-          variant="secondary"
-          style={{ flex: 1 }}
-          onPress={handleRecordVideo}
           disabled={progress !== null}
         />
         <Button

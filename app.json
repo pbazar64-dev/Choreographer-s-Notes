@@ -14,7 +14,7 @@
     ],
     "android": {
       "package": "com.choreonotes.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#F5F3EF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -27,13 +27,13 @@
         "android.permission.READ_MEDIA_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
         "android.permission.VIBRATE"
       ],
       "blockedPermissions": [
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.ACCESS_MEDIA_LOCATION"
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [
@@ -57,13 +57,6 @@
             "compileSdkVersion": 36,
             "targetSdkVersion": 36
           }
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Приложению нужен доступ к галерее, чтобы прикреплять видео и фото к конспектам уроков.",
-          "cameraPermission": "Приложению нужна камера, чтобы снимать видео упражнений."
         }
       ],
       "expo-video",

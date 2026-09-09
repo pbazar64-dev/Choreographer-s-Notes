@@ -12,6 +12,7 @@ import { createLesson } from '@/db/repositories/lessons.repo';
 import { createBlock } from '@/db/repositories/blocks.repo';
 import { attachMaterialToBlock } from '@/db/repositories/materials.repo';
 import type { AppDatabase } from '@/db/client';
+import { countTagUsage, deleteTag, parseTagNames } from '@/db/repositories/materials.repo';
 import {
   detectMaterialType,
   formatBytes,
@@ -134,6 +135,27 @@ describe('база материалов', () => {
 
     removeTagFromMaterial(db, video.id, tag.id);
     expect(listMaterialTags(db, video.id)).toHaveLength(0);
+  });
+
+  it('разбирает перечисление тегов через запятую', () => {
+    expect(parseTagNames('партер, трюк')).toEqual(['партер', 'трюк']);
+    expect(parseTagNames(' партер ')).toEqual(['партер']);
+    expect(parseTagNames('партер, партер')).toEqual(['партер']);
+    expect(parseTagNames('  ,  ')).toEqual([]);
+  });
+
+  it('удаляет тег, не трогая материалы', () => {
+    const { video, audio } = makeMaterials();
+    const tag = ensureTag(db, 'партер');
+    addTagToMaterial(db, video.id, tag.id);
+    addTagToMaterial(db, audio.id, tag.id);
+
+    expect(countTagUsage(db, tag.id)).toBe(2);
+
+    deleteTag(db, tag.id);
+
+    expect(listMaterialTags(db, video.id)).toHaveLength(0);
+    expect(listMaterials(db)).toHaveLength(3);
   });
 
   it('показывает все уроки, где используется материал', () => {
