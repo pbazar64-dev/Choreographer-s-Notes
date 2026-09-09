@@ -12,13 +12,22 @@ import { createLesson } from '@/db/repositories/lessons.repo';
 import { createBlock } from '@/db/repositories/blocks.repo';
 import { attachMaterialToBlock } from '@/db/repositories/materials.repo';
 import type { AppDatabase } from '@/db/client';
-import { countTagUsage, deleteTag, parseTagNames } from '@/db/repositories/materials.repo';
+import {
+  countTagUsage,
+  deleteTag,
+  normalizeExistingTags,
+  normalizeTagName,
+  parseTagNames,
+} from '@/db/repositories/materials.repo';
 import {
   detectMaterialType,
   formatBytes,
   linkSourceLabel,
   titleFromFileName,
 } from '@/lib/mediaTypes';
+
+import { listTags } from '@/db/repositories/materials.repo';
+import { tags as tagsTable } from '@/db/schema';
 
 import { createTestDb } from './helpers/testDb';
 
@@ -137,11 +146,46 @@ describe('база материалов', () => {
     expect(listMaterialTags(db, video.id)).toHaveLength(0);
   });
 
+  it('приводит теги к виду «Первая заглавная»', () => {
+    expect(normalizeTagName('ПРЫЖКИ')).toBe('Прыжки');
+    expect(normalizeTagName('прыжки')).toBe('Прыжки');
+    expect(normalizeTagName('  пАртер  ')).toBe('Партер');
+    expect(normalizeTagName('8-10 ЛЕТ')).toBe('8-10 лет');
+    expect(normalizeTagName('   ')).toBe('');
+  });
+
   it('разбирает перечисление тегов через запятую', () => {
-    expect(parseTagNames('партер, трюк')).toEqual(['партер', 'трюк']);
-    expect(parseTagNames(' партер ')).toEqual(['партер']);
-    expect(parseTagNames('партер, партер')).toEqual(['партер']);
+    expect(parseTagNames('партер, ТРЮК')).toEqual(['Партер', 'Трюк']);
+    expect(parseTagNames(' партер ')).toEqual(['Партер']);
+    expect(parseTagNames('партер, ПАРТЕР')).toEqual(['Партер']);
     expect(parseTagNames('  ,  ')).toEqual([]);
+  });
+
+  it('не заводит второй тег, если он отличается только регистром', () => {
+    const first = ensureTag(db, 'прыжки');
+    const second = ensureTag(db, 'ПРЫЖКИ');
+
+    expect(second.id).toBe(first.id);
+    expect(first.name).toBe('Прыжки');
+  });
+
+  it('приводит уже сохранённые теги к общему виду и сливает дубликаты', () => {
+    const { video, audio } = makeMaterials();
+
+    // Теги, заведённые до появления правила: разный регистр, один смысл.
+    const upper = db.insert(tagsTable).values({ name: 'ПРЫЖКИ' }).returning().get();
+    const lower = db.insert(tagsTable).values({ name: 'прыжки' }).returning().get();
+    addTagToMaterial(db, video.id, upper.id);
+    addTagToMaterial(db, audio.id, lower.id);
+
+    normalizeExistingTags(db);
+
+    const remaining = listTags(db);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.name).toBe('Прыжки');
+
+    // Материалы обоих тегов остались помеченными.
+    expect(listMaterials(db, { tagIds: [remaining[0]?.id ?? 0] })).toHaveLength(2);
   });
 
   it('удаляет тег, не трогая материалы', () => {

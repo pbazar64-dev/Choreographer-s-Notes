@@ -66,6 +66,13 @@ export default function MaterialsScreen() {
           `Добавлено: ${imported.length}. Не удалось: ${failed.join(', ')}`,
         );
       }
+
+      // Один файл — сразу открываем его карточку: название и теги проще
+      // заполнить по горячим следам. Несколько — оставляем список, они все на виду.
+      const single = imported.length === 1 ? imported[0] : null;
+      if (single) {
+        router.push(`/material/${single.id}`);
+      }
     } finally {
       setProgress(null);
     }

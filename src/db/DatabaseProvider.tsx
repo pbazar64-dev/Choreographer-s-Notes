@@ -5,6 +5,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { loadPreferences } from '@/features/settings/preferences';
 
 import { getDb, getDrizzle } from './client';
+import { normalizeExistingTags } from './repositories/materials.repo';
+import { getSetting, setSetting, SETTINGS_KEYS } from './repositories/settings.repo';
 import migrations from './migrations/migrations';
 import { seedIfEmpty } from './seed';
 
@@ -27,6 +29,7 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
         if (ENABLE_SEED) {
           seedIfEmpty(getDb());
         }
+        normalizeSavedTags();
         loadPreferences(getDb());
         if (!cancelled) setReady(true);
       })
@@ -53,6 +56,17 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+const TAGS_NORMALIZED_VERSION = '1';
+
+/** Разовое приведение сохранённых тегов к единому виду: «ПРЫЖКИ» → «Прыжки». */
+function normalizeSavedTags(): void {
+  const db = getDb();
+  if (getSetting(db, SETTINGS_KEYS.tagsNormalizedVersion) === TAGS_NORMALIZED_VERSION) return;
+
+  normalizeExistingTags(db);
+  setSetting(db, SETTINGS_KEYS.tagsNormalizedVersion, TAGS_NORMALIZED_VERSION);
 }
 
 /** Экран вместо молчаливого падения: без него на планшете не видно причины. */

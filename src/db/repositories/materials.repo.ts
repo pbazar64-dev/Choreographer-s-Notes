@@ -179,10 +179,56 @@ export function listTags(db: AppDatabase) {
 }
 
 export function ensureTag(db: AppDatabase, name: string) {
-  const normalized = name.trim();
+  const normalized = normalizeTagName(name);
   const existing = db.select().from(tags).where(eq(tags.name, normalized)).get();
   if (existing) return existing;
   return db.insert(tags).values({ name: normalized }).returning().get();
+}
+
+/**
+ * Приводит уже сохранённые теги к единому виду. Если после приведения
+ * появляются одинаковые («прыжки» и «Прыжки»), они сливаются в один,
+ * а связи с материалами переносятся на него.
+ *
+ * Делается в JavaScript, а не запросом: SQLite не умеет менять регистр кириллицы.
+ */
+export function normalizeExistingTags(db: AppDatabase): number {
+  const all = db.select().from(tags).all();
+  let changed = 0;
+
+  db.transaction((tx) => {
+    const canonical = new Map<string, number>();
+
+    for (const tag of all) {
+      const normalized = normalizeTagName(tag.name);
+      if (!normalized) continue;
+
+      const keeper = canonical.get(normalized);
+
+      if (keeper === undefined) {
+        canonical.set(normalized, tag.id);
+        if (normalized !== tag.name) {
+          tx.update(tags).set({ name: normalized }).where(eq(tags.id, tag.id)).run();
+          changed += 1;
+        }
+        continue;
+      }
+
+      // Дубликат: переносим материалы на оставшийся тег и убираем лишний.
+      const links = tx.select().from(materialTags).where(eq(materialTags.tagId, tag.id)).all();
+      for (const link of links) {
+        tx.insert(materialTags)
+          .values({ materialId: link.materialId, tagId: keeper })
+          .onConflictDoNothing()
+          .run();
+      }
+
+      tx.delete(tags).where(eq(tags.id, tag.id)).run();
+      changed += 1;
+    }
+  });
+
+  return changed;
 }
 
 export function listMaterialTags(db: AppDatabase, materialId: number) {
@@ -271,13 +317,24 @@ export function deleteTag(db: AppDatabase, tagId: number): void {
 }
 
 /**
+ * Единый вид тега: первая буква заглавная, остальные строчные.
+ * «ПРЫЖКИ», «прыжки» и «Прыжки» — это один и тот же тег, а не три.
+ */
+export function normalizeTagName(name: string): string {
+  const trimmed = name.trim().replace(/\s+/g, ' ');
+  if (!trimmed) return '';
+
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
+/**
  * Разбирает строку тегов: «партер, трюк» — это два тега, а не один.
  * Подсказка в поле сама предлагает перечисление через запятую.
  */
 export function parseTagNames(input: string): string[] {
   const names = input
     .split(',')
-    .map((name) => name.trim())
+    .map((name) => normalizeTagName(name))
     .filter(Boolean);
 
   return [...new Set(names)];

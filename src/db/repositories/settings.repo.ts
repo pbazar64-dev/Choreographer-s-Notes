@@ -9,6 +9,7 @@ export const SETTINGS_KEYS = {
   lastBackupAt: 'last_backup_at',
   lessonsSortNewestFirst: 'lessons_sort_newest_first',
   seedVersion: 'seed_version',
+  tagsNormalizedVersion: 'tags_normalized_version',
 } as const;
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS];
