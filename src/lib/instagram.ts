@@ -39,3 +39,26 @@ export function instagramEmbedUrl(url: string): string | null {
 
   return `https://www.instagram.com/${post.kind}/${post.code}/embed/captioned/`;
 }
+
+/** Высота шапки автора и подписи внутри встроенной страницы Instagram. */
+const EMBED_CHROME_HEIGHT = 108;
+const MAX_FRAME_WIDTH = 420;
+/** Вертикальное видео Instagram: 9 к 16. */
+const VERTICAL_RATIO = 16 / 9;
+
+export type FrameSize = { width: number; height: number };
+
+/**
+ * Размер окна под вертикальное видео. Рамка сужается, чтобы не было чёрных
+ * полей по бокам, и не вылезает за экран по высоте.
+ */
+export function instagramFrameSize(availableWidth: number, availableHeight: number): FrameSize {
+  const heightBudget = Math.max(240, availableHeight * 0.75) - EMBED_CHROME_HEIGHT;
+  const widthByHeight = heightBudget / VERTICAL_RATIO;
+  const width = Math.max(200, Math.min(availableWidth, MAX_FRAME_WIDTH, widthByHeight));
+
+  return {
+    width: Math.round(width),
+    height: Math.round(width * VERTICAL_RATIO + EMBED_CHROME_HEIGHT),
+  };
+}

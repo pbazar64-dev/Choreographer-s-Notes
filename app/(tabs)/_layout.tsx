@@ -1,12 +1,13 @@
 import { Tabs } from 'expo-router';
-import type { ColorValue } from 'react-native';
+import { Pressable, type GestureResponderEvent } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
 import { Text } from '@/ui';
 
 /**
- * Подписи вкладок рисуются как «иконки»: обычный лейбл прижимается к низу,
- * потому что React Navigation резервирует место под иконку, а иконок у нас нет.
+ * Кнопки вкладок рисуем сами: у навигации подпись прижимается к низу
+ * (резервируется место под иконку), а текст, отданный вместо иконки,
+ * обрезается до одной буквы — иконке задан фиксированный маленький размер.
  */
 export default function TabsLayout() {
   const theme = useTheme();
@@ -17,41 +18,65 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: theme.colors.background },
         headerTintColor: theme.colors.text,
         headerShadowVisible: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: theme.colors.accent,
-        tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
           height: 64,
         },
-        tabBarItemStyle: { alignItems: 'center', justifyContent: 'center' },
         sceneStyle: { backgroundColor: theme.colors.background },
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Календарь', tabBarIcon: tabLabel('Календарь') }}
+        options={{ title: 'Календарь', tabBarButton: tabButton('Календарь') }}
       />
-      <Tabs.Screen name="groups" options={{ title: 'Группы', tabBarIcon: tabLabel('Группы') }} />
+      <Tabs.Screen name="groups" options={{ title: 'Группы', tabBarButton: tabButton('Группы') }} />
       <Tabs.Screen
         name="materials"
-        options={{ title: 'Материалы', tabBarIcon: tabLabel('Материалы') }}
+        options={{ title: 'Материалы', tabBarButton: tabButton('Материалы') }}
       />
       <Tabs.Screen
         name="settings"
-        options={{ title: 'Настройки', tabBarIcon: tabLabel('Настройки') }}
+        options={{ title: 'Настройки', tabBarButton: tabButton('Настройки') }}
       />
     </Tabs>
   );
 }
 
-function tabLabel(title: string) {
-  return function TabLabel({ color }: { color: ColorValue }) {
+type TabButtonProps = {
+  accessibilityState?: { selected?: boolean };
+  accessibilityLabel?: string;
+  onPress?: (event: GestureResponderEvent) => void;
+  testID?: string;
+};
+
+function tabButton(title: string) {
+  return function TabButton({ accessibilityState, onPress, testID }: TabButtonProps) {
+    const theme = useTheme();
+    const selected = Boolean(accessibilityState?.selected);
+
     return (
-      <Text variant="label" numberOfLines={1} style={{ color }}>
-        {title}
-      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        accessibilityLabel={title}
+        testID={testID}
+        onPress={onPress}
+        style={{
+          alignItems: 'center',
+          flex: 1,
+          justifyContent: 'center',
+          paddingHorizontal: theme.spacing.xs,
+        }}
+      >
+        <Text
+          variant="label"
+          numberOfLines={1}
+          style={{ color: selected ? theme.colors.accent : theme.colors.textMuted }}
+        >
+          {title}
+        </Text>
+      </Pressable>
     );
   };
 }

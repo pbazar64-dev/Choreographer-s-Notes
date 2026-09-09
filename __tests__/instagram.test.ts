@@ -1,4 +1,9 @@
-import { instagramEmbedUrl, isInstagramUrl, parseInstagramUrl } from '@/lib/instagram';
+import {
+  instagramEmbedUrl,
+  instagramFrameSize,
+  isInstagramUrl,
+  parseInstagramUrl,
+} from '@/lib/instagram';
 
 describe('ссылки Instagram', () => {
   it('узнаёт ссылки Instagram', () => {
@@ -46,5 +51,38 @@ describe('ссылки Instagram', () => {
     expect(instagramEmbedUrl('https://www.instagram.com/reel/XYZ789/?igsh=1')).toBe(
       'https://www.instagram.com/reel/XYZ789/embed/captioned/',
     );
+  });
+});
+
+describe('размер вертикального окна Instagram', () => {
+  it('на телефоне ужимается так, чтобы влезть по высоте', () => {
+    const frame = instagramFrameSize(360, 800);
+
+    expect(frame.width).toBeLessThanOrEqual(360);
+    expect(frame.height).toBeLessThanOrEqual(800);
+    expect(frame.height).toBeGreaterThan(frame.width);
+  });
+
+  it('на планшете не растягивается на всю ширину', () => {
+    const frame = instagramFrameSize(1000, 1400);
+    expect(frame.width).toBe(420);
+  });
+
+  it('в альбомной ориентации ужимается по высоте', () => {
+    const frame = instagramFrameSize(1200, 600);
+    expect(frame.height).toBeLessThanOrEqual(600);
+    expect(frame.width).toBeLessThan(420);
+  });
+
+  it('окно всегда вертикальное', () => {
+    for (const [w, h] of [
+      [360, 800],
+      [1000, 1400],
+      [1200, 600],
+      [200, 300],
+    ]) {
+      const frame = instagramFrameSize(w as number, h as number);
+      expect(frame.height).toBeGreaterThan(frame.width);
+    }
   });
 });
