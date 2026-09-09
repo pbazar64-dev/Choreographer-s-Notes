@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { blockKindLabel } from '@/constants/blockKinds';
 import type { BlockMaterialItem, BlockWithMaterials } from '@/db/repositories/blocks.repo';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Button, Badge, Card, Text } from '@/ui';
+import { Badge, Button, Card, Text } from '@/ui';
 
 import { MaterialStrip } from './MaterialStrip';
 
@@ -11,37 +11,28 @@ export function BlockCard({
   block,
   index,
   onPress,
-  onLongPress,
   onAddMaterial,
   onOpenMaterial,
-  isActive = false,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
 }: {
   block: BlockWithMaterials;
   index: number;
   onPress: () => void;
-  onLongPress?: () => void;
   onAddMaterial: () => void;
   onOpenMaterial: (item: BlockMaterialItem) => void;
-  isActive?: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }) {
   const theme = useTheme();
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={200}
-      accessibilityRole="button"
-      accessibilityLabel={`Блок ${index + 1}: ${block.title}`}
-      accessibilityHint="Удерживайте, чтобы перетащить"
-    >
-      <Card
-        style={{
-          borderColor: isActive ? theme.colors.accent : theme.colors.border,
-          borderWidth: isActive ? 2 : undefined,
-          opacity: isActive ? 0.95 : 1,
-        }}
-      >
+    <Card>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={block.title}>
         <View
           style={{
             alignItems: 'center',
@@ -66,16 +57,39 @@ export function BlockCard({
             {block.notes.trim()}
           </Text>
         ) : null}
+      </Pressable>
 
-        <MaterialStrip items={block.materials} onPressItem={onOpenMaterial} />
+      <MaterialStrip items={block.materials} onPressItem={onOpenMaterial} />
 
+      <View
+        style={{
+          alignItems: 'center',
+          flexDirection: 'row',
+          gap: theme.spacing.sm,
+          paddingTop: theme.spacing.sm,
+        }}
+      >
         <Button
-          title={block.materials.length > 0 ? 'Добавить материал' : 'Добавить видео или музыку'}
-          variant="ghost"
+          title={block.materials.length > 0 ? 'Ещё материал' : 'Видео или музыка'}
+          variant="secondary"
           onPress={onAddMaterial}
-          style={{ alignSelf: 'flex-start', marginTop: theme.spacing.xs }}
+          style={{ flex: 1 }}
         />
-      </Card>
-    </Pressable>
+        <Button
+          title="Выше"
+          variant="secondary"
+          onPress={onMoveUp}
+          disabled={!canMoveUp}
+          accessibilityLabel="Переместить блок выше"
+        />
+        <Button
+          title="Ниже"
+          variant="secondary"
+          onPress={onMoveDown}
+          disabled={!canMoveDown}
+          accessibilityLabel="Переместить блок ниже"
+        />
+      </View>
+    </Card>
   );
 }

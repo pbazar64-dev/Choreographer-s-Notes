@@ -1,7 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Share, View } from 'react-native';
-import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
+import { Alert, FlatList, Share, View } from 'react-native';
 
 import {
   createBlock,
@@ -9,7 +8,6 @@ import {
   nextBlockSortOrder,
   reorderBlocks,
   type BlockMaterialItem,
-  type BlockWithMaterials,
 } from '@/db/repositories/blocks.repo';
 import { duplicateLesson, getLesson } from '@/db/repositories/lessons.repo';
 import { useDatabase } from '@/db/useDatabase';
@@ -21,6 +19,7 @@ import { MaterialPlayerSheet } from '@/features/lessons/components/MaterialPlaye
 import { lessonToText } from '@/features/lessons/lessonToText';
 import { addDays, formatFullDate } from '@/lib/date';
 import { getLessonTimeSummary } from '@/lib/lessonTime';
+import { moveItem } from '@/lib/reorder';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button, EmptyState, Screen, Text } from '@/ui';
@@ -60,10 +59,14 @@ export default function LessonScreen() {
     router.push(`/lesson/${lessonId}/block?blockId=${created.id}`);
   }
 
-  function handleReorder(ordered: BlockWithMaterials[]) {
+  function handleMove(from: number, to: number) {
     reorderBlocks(
       db,
-      ordered.map((block) => block.id),
+      moveItem(
+        blocks.map((block) => block.id),
+        from,
+        to,
+      ),
     );
     bumpDbRevision();
   }
@@ -98,12 +101,10 @@ export default function LessonScreen() {
     <Screen padded={false}>
       <Stack.Screen options={{ title: `Урок ${lesson.orderNumber}` }} />
 
-      <DraggableFlatList
+      <FlatList
         data={blocks}
         keyExtractor={(item) => String(item.id)}
-        onDragEnd={({ data }) => handleReorder(data)}
-        activationDistance={12}
-        containerStyle={{ flex: 1 }}
+        style={{ flex: 1 }}
         contentContainerStyle={{
           gap: theme.spacing.md,
           paddingBottom: theme.spacing.xl,
@@ -139,7 +140,7 @@ export default function LessonScreen() {
             <Button title="Провести урок" onPress={() => router.push(`/lesson/${lessonId}/run`)} />
 
             <Text variant="caption" tone="muted">
-              Тап по блоку — редактирование, долгое нажатие — перетаскивание.
+              Тап по блоку — редактирование. Кнопки «Выше» и «Ниже» меняют порядок.
             </Text>
           </View>
         }
@@ -151,15 +152,17 @@ export default function LessonScreen() {
             onAction={handleAddBlock}
           />
         }
-        renderItem={({ item, getIndex, drag, isActive }: RenderItemParams<BlockWithMaterials>) => (
+        renderItem={({ item, index }) => (
           <BlockCard
             block={item}
-            index={getIndex() ?? 0}
-            isActive={isActive}
-            onLongPress={drag}
+            index={index}
             onPress={() => router.push(`/lesson/${lessonId}/block?blockId=${item.id}`)}
             onAddMaterial={() => router.push(`/lesson/${lessonId}/attach?blockId=${item.id}`)}
             onOpenMaterial={setOpenedMaterial}
+            onMoveUp={() => handleMove(index, index - 1)}
+            onMoveDown={() => handleMove(index, index + 1)}
+            canMoveUp={index > 0}
+            canMoveDown={index < blocks.length - 1}
           />
         )}
       />

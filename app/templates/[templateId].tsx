@@ -1,7 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
-import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
+import { Alert, FlatList, View } from 'react-native';
 
 import { blockKindLabel } from '@/constants/blockKinds';
 import { listGroups } from '@/db/repositories/groups.repo';
@@ -14,9 +13,9 @@ import {
   templateTotalMinutes,
   updateTemplate,
 } from '@/db/repositories/templates.repo';
-import type { TemplateBlock } from '@/db/schema';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
+import { moveItem } from '@/lib/reorder';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Badge, Button, Card, EmptyState, Screen, Text, TextField } from '@/ui';
@@ -59,6 +58,18 @@ export default function TemplateEditScreen() {
     bumpDbRevision();
   }
 
+  function handleMove(from: number, to: number) {
+    reorderTemplateBlocks(
+      db,
+      moveItem(
+        blocks.map((block) => block.id),
+        from,
+        to,
+      ),
+    );
+    bumpDbRevision();
+  }
+
   function handleAddBlock() {
     const created = createTemplateBlock(db, templateId, {
       title: 'Новый блок',
@@ -91,18 +102,10 @@ export default function TemplateEditScreen() {
     <Screen padded={false}>
       <Stack.Screen options={{ title: template.name }} />
 
-      <DraggableFlatList
+      <FlatList
         data={blocks}
         keyExtractor={(item) => String(item.id)}
-        onDragEnd={({ data }) => {
-          reorderTemplateBlocks(
-            db,
-            data.map((block) => block.id),
-          );
-          bumpDbRevision();
-        }}
-        activationDistance={12}
-        containerStyle={{ flex: 1 }}
+        style={{ flex: 1 }}
         contentContainerStyle={{
           gap: theme.spacing.md,
           paddingBottom: theme.spacing.xl,
@@ -141,8 +144,8 @@ export default function TemplateEditScreen() {
             </View>
 
             <Text variant="caption" tone="muted">
-              Тап по блоку — редактирование, долгое нажатие — перетаскивание. Всего {totalMinutes}{' '}
-              мин.
+              Тап по блоку — редактирование. Кнопки «Выше» и «Ниже» меняют порядок. Всего{' '}
+              {totalMinutes} мин.
             </Text>
           </View>
         }
@@ -154,14 +157,8 @@ export default function TemplateEditScreen() {
             onAction={handleAddBlock}
           />
         }
-        renderItem={({ item, drag, isActive }: RenderItemParams<TemplateBlock>) => (
-          <Card
-            onPress={() => router.push(`/templates/block?blockId=${item.id}`)}
-            style={{
-              borderColor: isActive ? theme.colors.accent : theme.colors.border,
-              borderWidth: isActive ? 2 : undefined,
-            }}
-          >
+        renderItem={({ item, index }) => (
+          <Card onPress={() => router.push(`/templates/block?blockId=${item.id}`)}>
             <View
               style={{
                 alignItems: 'center',
@@ -172,19 +169,37 @@ export default function TemplateEditScreen() {
             >
               <View style={{ flex: 1 }}>
                 <Text variant="caption" tone="muted">
-                  {blockKindLabel(item.kind)}
+                  {index + 1} · {blockKindLabel(item.kind)}
                 </Text>
-                <Text variant="subtitle" onLongPress={drag}>
-                  {item.title}
-                </Text>
+                <Text variant="subtitle">{item.title}</Text>
               </View>
               <Badge label={`${item.plannedMinutes} мин`} />
             </View>
+
             {item.defaultNotes.trim() ? (
               <Text tone="muted" numberOfLines={2}>
                 {item.defaultNotes.trim()}
               </Text>
             ) : null}
+
+            <View
+              style={{ flexDirection: 'row', gap: theme.spacing.sm, paddingTop: theme.spacing.sm }}
+            >
+              <Button
+                title="Выше"
+                variant="secondary"
+                style={{ flex: 1 }}
+                disabled={index === 0}
+                onPress={() => handleMove(index, index - 1)}
+              />
+              <Button
+                title="Ниже"
+                variant="secondary"
+                style={{ flex: 1 }}
+                disabled={index === blocks.length - 1}
+                onPress={() => handleMove(index, index + 1)}
+              />
+            </View>
           </Card>
         )}
       />

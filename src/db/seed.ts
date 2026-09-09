@@ -36,7 +36,7 @@ export function seedIfEmpty(db: AppDatabase): boolean {
       .values({
         name: 'Дети 8–10',
         description: 'Контемпорари, младшая группа',
-        colorHex: '#C2703D',
+        colorHex: '#E0B49E',
         defaultLessonMinutes: 60,
       })
       .returning()
@@ -47,7 +47,7 @@ export function seedIfEmpty(db: AppDatabase): boolean {
       .values({
         name: 'Взрослые 16+',
         description: 'Контемпорари, вечерняя группа',
-        colorHex: '#4F7A6B',
+        colorHex: '#A9C6B4',
         defaultLessonMinutes: 90,
       })
       .returning()

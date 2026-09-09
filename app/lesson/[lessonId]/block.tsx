@@ -118,9 +118,16 @@ export default function BlockEditScreen() {
           multiline
         />
 
-        <Text variant="caption" tone="muted">
-          Прикрепление видео и музыки к блоку появится на этапе Э4.
-        </Text>
+        <View style={{ gap: theme.spacing.sm }}>
+          <Button
+            title="Видео и музыка блока"
+            variant="secondary"
+            onPress={() => router.push(`/lesson/${params.lessonId}/attach?blockId=${blockId}`)}
+          />
+          <Text variant="caption" tone="muted">
+            Материалы прикрепляются к блоку: их видно в конспекте и в режиме урока.
+          </Text>
+        </View>
 
         <View style={{ gap: theme.spacing.sm }}>
           <Button title="Сохранить" onPress={handleSave} />

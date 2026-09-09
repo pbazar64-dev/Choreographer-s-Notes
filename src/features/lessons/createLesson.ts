@@ -6,7 +6,7 @@ import { todayKey } from '@/lib/date';
 
 /**
  * Новый конспект в группе: номер по порядку, длительность из настроек группы.
- * Применение шаблона группы подключается на Э6.
+ * Шаблон применяется отдельно, на экране выбора шаблона.
  */
 export function createLessonForGroup(db: AppDatabase, group: Group, dateKey = todayKey()) {
   const orderNumber = nextLessonOrderNumber(db, group.id);
