@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, useWindowDimensions, View } from 'react-native';
 
 import { getBlock } from '@/db/repositories/blocks.repo';
@@ -14,6 +14,7 @@ import {
   type ImportProgress,
 } from '@/features/materials/importMaterials';
 import { typesForFilters, type MaterialFilterCode } from '@/features/materials/types';
+import { useLinkTitle } from '@/features/materials/useLinkTitle';
 import { linkSourceLabel, pickMediaFiles } from '@/lib/media';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -165,6 +166,17 @@ function NewMaterialTab({ blockId }: { blockId: number }) {
   const [linkType, setLinkType] = useState<'video_link' | 'audio_link'>('video_link');
   const [linkError, setLinkError] = useState<string | undefined>();
 
+  const handleTitleResolved = useCallback((resolved: string) => {
+    setLinkTitle(resolved);
+    setLinkError(undefined);
+  }, []);
+
+  const { loading: titleLoading } = useLinkTitle({
+    url,
+    title: linkTitle,
+    onTitleResolved: handleTitleResolved,
+  });
+
   /**
    * Новый материал одновременно прикрепляется к блоку и попадает в общую базу —
    * это требование ТЗ, а не побочный эффект.
@@ -271,9 +283,13 @@ function NewMaterialTab({ blockId }: { blockId: number }) {
         />
 
         {url.trim() ? (
-          <Text variant="caption" tone="muted">
-            Источник: {linkSourceLabel(url.trim())}
-          </Text>
+          <View style={{ alignItems: 'center', flexDirection: 'row', gap: theme.spacing.sm }}>
+            {titleLoading ? <ActivityIndicator color={theme.colors.accent} /> : null}
+            <Text variant="caption" tone="muted">
+              Источник: {linkSourceLabel(url.trim())}
+              {titleLoading ? ' · определяю название…' : ''}
+            </Text>
+          </View>
         ) : null}
 
         <TextField

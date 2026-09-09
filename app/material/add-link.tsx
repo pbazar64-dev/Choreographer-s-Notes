@@ -1,9 +1,10 @@
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 
 import { useDatabase } from '@/db/useDatabase';
 import { createLinkMaterial } from '@/features/materials/importMaterials';
+import { useLinkTitle } from '@/features/materials/useLinkTitle';
 import { linkSourceLabel } from '@/lib/media';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -18,6 +19,17 @@ export default function AddLinkScreen() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'video_link' | 'audio_link'>('video_link');
   const [errors, setErrors] = useState<{ url?: string; title?: string }>({});
+
+  const handleTitleResolved = useCallback((resolved: string) => {
+    setTitle(resolved);
+    setErrors((prev) => ({ ...prev, title: undefined }));
+  }, []);
+
+  const { loading: titleLoading } = useLinkTitle({
+    url,
+    title,
+    onTitleResolved: handleTitleResolved,
+  });
 
   function handleSave() {
     const trimmedUrl = url.trim();
@@ -64,9 +76,13 @@ export default function AddLinkScreen() {
         />
 
         {url.trim() ? (
-          <Text variant="caption" tone="muted">
-            Источник: {linkSourceLabel(url.trim())}
-          </Text>
+          <View style={{ alignItems: 'center', flexDirection: 'row', gap: theme.spacing.sm }}>
+            {titleLoading ? <ActivityIndicator color={theme.colors.accent} /> : null}
+            <Text variant="caption" tone="muted">
+              Источник: {linkSourceLabel(url.trim())}
+              {titleLoading ? ' · определяю название…' : ''}
+            </Text>
+          </View>
         ) : null}
 
         <TextField
@@ -79,6 +95,11 @@ export default function AddLinkScreen() {
           placeholder="Разминка: суставная гимнастика"
           error={errors.title}
         />
+
+        <Text variant="caption" tone="muted">
+          Название подставляется из ссылки автоматически, если сайт его отдаёт. Правьте как удобно —
+          введённое вручную не перезапишется.
+        </Text>
 
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="label" tone="muted">
