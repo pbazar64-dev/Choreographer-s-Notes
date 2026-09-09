@@ -7,11 +7,13 @@ import { Linking, View } from 'react-native';
 import type { Material } from '@/db/schema';
 import { toAbsoluteUri } from '@/lib/files';
 import { formatDuration } from '@/lib/lessonTime';
+import { isInstagramUrl } from '@/lib/instagram';
 import { linkSourceLabel } from '@/lib/media';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button, Text } from '@/ui';
 
 import { isAudioMaterial, isLinkMaterial } from '../types';
+import { InstagramPlayer } from './InstagramPlayer';
 
 /**
  * Плеер материала. Файлы играются внутри приложения, ссылки открываются
@@ -147,6 +149,11 @@ function ImageViewer({ material }: { material: Material }) {
 function LinkPlayer({ material }: { material: Material }) {
   const theme = useTheme();
   if (!material.url) return <MissingFile />;
+
+  // Instagram играем во встроенном окне; остальные ссылки открываем снаружи.
+  if (isInstagramUrl(material.url)) {
+    return <InstagramPlayer url={material.url} />;
+  }
 
   return (
     <View style={{ gap: theme.spacing.sm }}>
