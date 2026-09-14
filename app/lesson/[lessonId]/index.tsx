@@ -9,7 +9,9 @@ import {
   reorderBlocks,
   type BlockMaterialItem,
 } from '@/db/repositories/blocks.repo';
+import { blockKindLabel, DEFAULT_BLOCK_KIND } from '@/constants/blockKinds';
 import { duplicateLesson, getLesson } from '@/db/repositories/lessons.repo';
+import { detachMaterialFromBlock } from '@/db/repositories/materials.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
 import { BlockCard } from '@/features/lessons/components/BlockCard';
@@ -50,13 +52,31 @@ export default function LessonScreen() {
   function handleAddBlock() {
     const created = createBlock(db, {
       lessonId,
-      title: 'Новый блок',
-      kind: 'free',
+      title: blockKindLabel(DEFAULT_BLOCK_KIND),
+      kind: DEFAULT_BLOCK_KIND,
       plannedMinutes: 10,
       sortOrder: nextBlockSortOrder(db, lessonId),
     });
     bumpDbRevision();
     router.push(`/lesson/${lessonId}/block?blockId=${created.id}`);
+  }
+
+  function handleDetachMaterial(item: BlockMaterialItem) {
+    Alert.alert(
+      'Открепить материал?',
+      `«${item.material.title}» исчезнет из этого блока, но останется в общей базе и в других уроках.`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Открепить',
+          style: 'destructive',
+          onPress: () => {
+            detachMaterialFromBlock(db, item.id);
+            bumpDbRevision();
+          },
+        },
+      ],
+    );
   }
 
   function handleMove(from: number, to: number) {
@@ -159,6 +179,7 @@ export default function LessonScreen() {
             onPress={() => router.push(`/lesson/${lessonId}/block?blockId=${item.id}`)}
             onAddMaterial={() => router.push(`/lesson/${lessonId}/attach?blockId=${item.id}`)}
             onOpenMaterial={setOpenedMaterial}
+            onDetachMaterial={handleDetachMaterial}
             onMoveUp={() => handleMove(index, index - 1)}
             onMoveDown={() => handleMove(index, index + 1)}
             canMoveUp={index > 0}

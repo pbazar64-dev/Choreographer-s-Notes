@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { createAudioPlayer } from 'expo-audio';
 import { createVideoPlayer } from 'expo-video';
@@ -21,25 +22,58 @@ export type PickedFile = {
   sizeBytes: number | null;
 };
 
+const MEDIA_MIME_TYPES = ['video/*', 'audio/*', 'image/*'];
+
 /**
  * Выбор файлов системным пикером (Storage Access Framework).
  * Разрешения на хранилище для этого пути не нужны — их и не спрашиваем.
+ *
+ * Берём пикер из expo-file-system: у expo-document-picker есть защита
+ * «выбор уже идёт», и если предыдущий вызов не завершился (так бывает, когда
+ * пикер закрывают системной кнопкой «назад»), все следующие попытки молча
+ * падают до перезапуска приложения. Старый пикер оставлен запасным путём.
  */
 export async function pickMediaFiles(multiple = true): Promise<PickedFile[]> {
-  const result = await DocumentPicker.getDocumentAsync({
-    type: ['video/*', 'audio/*', 'image/*'],
-    multiple,
-    copyToCacheDirectory: true,
-  });
+  try {
+    const picked = await File.pickFileAsync({
+      multipleFiles: true,
+      mimeTypes: MEDIA_MIME_TYPES,
+    });
 
-  if (result.canceled) return [];
+    if (picked.canceled || !picked.result) return [];
 
-  return result.assets.map((asset) => ({
-    uri: asset.uri,
-    name: asset.name,
-    mimeType: asset.mimeType ?? null,
-    sizeBytes: asset.size ?? null,
-  }));
+    const files = Array.isArray(picked.result) ? picked.result : [picked.result];
+    return files.map((file) => ({
+      uri: file.uri,
+      name: file.name,
+      mimeType: null,
+      sizeBytes: file.exists ? (file.size ?? null) : null,
+    }));
+  } catch {
+    return pickMediaFilesLegacy(multiple);
+  }
+}
+
+async function pickMediaFilesLegacy(multiple: boolean): Promise<PickedFile[]> {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: MEDIA_MIME_TYPES,
+      multiple,
+      copyToCacheDirectory: true,
+    });
+
+    if (result.canceled) return [];
+
+    return result.assets.map((asset) => ({
+      uri: asset.uri,
+      name: asset.name,
+      mimeType: asset.mimeType ?? null,
+      sizeBytes: asset.size ?? null,
+    }));
+  } catch {
+    // Оба пикера отказали — вернуть пустой выбор честнее, чем уронить экран.
+    return [];
+  }
 }
 
 /** Кадр из видео как превью. Возвращает относительный путь или null. */

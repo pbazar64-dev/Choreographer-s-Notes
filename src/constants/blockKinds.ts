@@ -17,3 +17,18 @@ export const DEFAULT_BLOCK_KIND: BlockKind = 'free';
 export function blockKindLabel(code: string): string {
   return BLOCK_KINDS.find((kind) => kind.code === code)?.label ?? 'Свободный';
 }
+
+/**
+ * Название блока при смене вида. Автоматически подставленное название
+ * заменяется на новое, а написанное руками — остаётся нетронутым.
+ */
+export function titleForKindChange(
+  currentTitle: string,
+  previousKind: string,
+  nextKind: string,
+): string {
+  const trimmed = currentTitle.trim();
+  const wasAutomatic = trimmed === '' || trimmed === blockKindLabel(previousKind);
+
+  return wasAutomatic ? blockKindLabel(nextKind) : currentTitle;
+}

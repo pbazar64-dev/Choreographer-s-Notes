@@ -11,10 +11,16 @@ import {
 } from '@/db/repositories/materials.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
+import { AudioRow } from '@/features/materials/components/AudioRow';
 import { MaterialFilters as MaterialFiltersRow } from '@/features/materials/components/MaterialFilters';
 import { MaterialTile } from '@/features/materials/components/MaterialTile';
 import { importFiles, type ImportProgress } from '@/features/materials/importMaterials';
-import { typesForFilters, type MaterialFilterCode } from '@/features/materials/types';
+import {
+  MATERIAL_SECTIONS,
+  sectionForType,
+  typesForSection,
+  type MaterialSection,
+} from '@/features/materials/types';
 import { pickMediaFiles } from '@/lib/media';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -30,8 +36,8 @@ export default function MaterialsScreen() {
   const theme = useTheme();
   const { width } = useWindowDimensions();
 
+  const [section, setSection] = useState<MaterialSection>('video');
   const [search, setSearch] = useState('');
-  const [typeFilters, setTypeFilters] = useState<MaterialFilterCode[]>([]);
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [sort, setSort] = useState<SortValue>('created_desc');
   const [progress, setProgress] = useState<ImportProgress | null>(null);
@@ -41,18 +47,28 @@ export default function MaterialsScreen() {
     (database) =>
       listMaterials(database, {
         search,
-        types: typesForFilters(typeFilters),
+        types: typesForSection(section),
         tagIds,
         sort,
       }),
-    [search, typeFilters.join(','), tagIds.join(','), sort],
+    [section, search, tagIds.join(','), sort],
   );
 
-  const columns = Math.max(2, Math.floor((width - theme.spacing.lg * 2) / MIN_TILE_WIDTH));
+  const isAudio = section === 'audio';
+  const columns = isAudio
+    ? 1
+    : Math.max(2, Math.floor((width - theme.spacing.lg * 2) / MIN_TILE_WIDTH));
   const gap = theme.spacing.md;
   const tileWidth = (width - theme.spacing.lg * 2 - gap * (columns - 1)) / columns;
 
-  async function runImport(files: Awaited<ReturnType<typeof pickMediaFiles>>) {
+  async function handlePickFiles() {
+    const files = await pickMediaFiles(true).catch(() => {
+      Alert.alert(
+        'Не удалось открыть выбор файлов',
+        'Попробуйте ещё раз. Если не помогает — закройте и откройте приложение.',
+      );
+      return [];
+    });
     if (files.length === 0) return;
 
     setProgress({ current: 0, total: files.length, title: '' });
@@ -67,25 +83,16 @@ export default function MaterialsScreen() {
         );
       }
 
-      // Один файл — сразу открываем его карточку: название и теги проще
-      // заполнить по горячим следам. Несколько — оставляем список, они все на виду.
-      const single = imported.length === 1 ? imported[0] : null;
-      if (single) {
-        router.push(`/material/${single.id}`);
+      // Сразу открываем карточку, чтобы задать название, описание и теги
+      // по горячим следам. Если файлов было несколько — открываем первый.
+      const first = imported[0];
+      if (first) {
+        setSection(sectionForType(first.type));
+        router.push(`/material/${first.id}`);
       }
     } finally {
       setProgress(null);
     }
-  }
-
-  async function handlePickFiles() {
-    await runImport(await pickMediaFiles(true));
-  }
-
-  function toggleType(code: MaterialFilterCode) {
-    setTypeFilters((current) =>
-      current.includes(code) ? current.filter((item) => item !== code) : [...current, code],
-    );
   }
 
   function handleDeleteTag(tag: { id: number; name: string }) {
@@ -120,19 +127,25 @@ export default function MaterialsScreen() {
   return (
     <Screen>
       <FlatList
-        key={columns}
+        key={`${section}-${columns}`}
         data={materials}
         numColumns={columns}
         keyExtractor={(item) => String(item.id)}
         keyboardShouldPersistTaps="handled"
         columnWrapperStyle={columns > 1 ? { gap } : undefined}
         contentContainerStyle={{
-          gap,
+          gap: isAudio ? theme.spacing.sm : gap,
           paddingBottom: theme.spacing.xl,
           paddingTop: theme.spacing.lg,
         }}
         ListHeaderComponent={
           <View style={{ gap: theme.spacing.md, paddingBottom: theme.spacing.sm }}>
+            <SegmentedControl
+              value={section}
+              onChange={setSection}
+              options={MATERIAL_SECTIONS.map((item) => ({ value: item.code, label: item.label }))}
+            />
+
             <TextField
               value={search}
               onChangeText={setSearch}
@@ -141,8 +154,6 @@ export default function MaterialsScreen() {
             />
 
             <MaterialFiltersRow
-              activeTypes={typeFilters}
-              onToggleType={toggleType}
               tags={tags}
               activeTagIds={tagIds}
               onToggleTag={toggleTag}
@@ -186,21 +197,21 @@ export default function MaterialsScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            title={
-              search || typeFilters.length > 0 || tagIds.length > 0
-                ? 'Ничего не найдено'
-                : 'База материалов пуста'
-            }
+            title={search || tagIds.length > 0 ? 'Ничего не найдено' : 'Здесь пока пусто'}
             description="Видео и музыка живут здесь и подставляются в конспекты ссылками: один файл — сколько угодно уроков."
           />
         }
-        renderItem={({ item }) => (
-          <MaterialTile
-            material={item}
-            width={tileWidth}
-            onPress={() => router.push(`/material/${item.id}`)}
-          />
-        )}
+        renderItem={({ item }) =>
+          isAudio ? (
+            <AudioRow material={item} onPress={() => router.push(`/material/${item.id}`)} />
+          ) : (
+            <MaterialTile
+              material={item}
+              width={tileWidth}
+              onPress={() => router.push(`/material/${item.id}`)}
+            />
+          )
+        }
       />
 
       <View

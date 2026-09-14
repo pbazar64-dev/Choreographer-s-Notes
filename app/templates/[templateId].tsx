@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, FlatList, View } from 'react-native';
 
-import { blockKindLabel } from '@/constants/blockKinds';
+import { blockKindLabel, DEFAULT_BLOCK_KIND } from '@/constants/blockKinds';
 import { listGroups } from '@/db/repositories/groups.repo';
 import {
   createTemplateBlock,
@@ -72,8 +72,8 @@ export default function TemplateEditScreen() {
 
   function handleAddBlock() {
     const created = createTemplateBlock(db, templateId, {
-      title: 'Новый блок',
-      kind: 'free',
+      title: blockKindLabel(DEFAULT_BLOCK_KIND),
+      kind: DEFAULT_BLOCK_KIND,
       plannedMinutes: 10,
       defaultNotes: '',
     });

@@ -8,6 +8,27 @@ export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
   image: 'Фото',
 };
 
+/** Разделы базы материалов: видео, аудио и фото лежат по разным вкладкам. */
+export const MATERIAL_SECTIONS = [
+  { code: 'video', label: 'Видео', types: ['video_file', 'video_link'] },
+  { code: 'audio', label: 'Аудио', types: ['audio_file', 'audio_link'] },
+  { code: 'image', label: 'Фото', types: ['image'] },
+] as const satisfies readonly { code: string; label: string; types: readonly MaterialType[] }[];
+
+export type MaterialSection = (typeof MATERIAL_SECTIONS)[number]['code'];
+
+export function typesForSection(section: MaterialSection): MaterialType[] {
+  return [...(MATERIAL_SECTIONS.find((item) => item.code === section)?.types ?? [])];
+}
+
+/** Раздел, в котором лежит материал: нужен, чтобы открыть нужную вкладку. */
+export function sectionForType(type: MaterialType): MaterialSection {
+  return (
+    MATERIAL_SECTIONS.find((section) => section.types.some((item) => item === type))?.code ??
+    'video'
+  );
+}
+
 /** Фильтры по типу в базе материалов (п. 4.5 ТЗ): видео / аудио / ссылка / фото. */
 export const MATERIAL_FILTERS = [
   { code: 'video', label: 'Видео', types: ['video_file', 'video_link'] },

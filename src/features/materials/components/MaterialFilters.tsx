@@ -14,8 +14,9 @@ export function MaterialFilters({
   onToggleTag,
   onDeleteTag,
 }: {
-  activeTypes: readonly MaterialFilterCode[];
-  onToggleType: (code: MaterialFilterCode) => void;
+  activeTypes?: readonly MaterialFilterCode[];
+  /** Если не передан, чипы типов не показываются: раздел уже выбран вкладкой */
+  onToggleType?: (code: MaterialFilterCode) => void;
   tags: readonly Tag[];
   activeTagIds: readonly number[];
   onToggleTag: (tagId: number) => void;
@@ -26,16 +27,18 @@ export function MaterialFilters({
 
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-        {MATERIAL_FILTERS.map((filter) => (
-          <FilterChip
-            key={filter.code}
-            label={filter.label}
-            active={activeTypes.includes(filter.code)}
-            onPress={() => onToggleType(filter.code)}
-          />
-        ))}
-      </View>
+      {onToggleType ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+          {MATERIAL_FILTERS.map((filter) => (
+            <FilterChip
+              key={filter.code}
+              label={filter.label}
+              active={(activeTypes ?? []).includes(filter.code)}
+              onPress={() => onToggleType(filter.code)}
+            />
+          ))}
+        </View>
+      ) : null}
 
       {tags.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>

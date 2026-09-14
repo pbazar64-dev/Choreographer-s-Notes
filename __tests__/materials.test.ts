@@ -29,6 +29,8 @@ import {
 import { listTags } from '@/db/repositories/materials.repo';
 import { tags as tagsTable } from '@/db/schema';
 
+import { sectionForType, typesForSection } from '@/features/materials/types';
+
 import { createTestDb } from './helpers/testDb';
 
 describe('определение типа материала', () => {
@@ -221,5 +223,19 @@ describe('база материалов', () => {
     const usage = getMaterialUsage(db, video.id);
     expect(usage).toHaveLength(2);
     expect(usage[0]?.lessonDate).toBe('2026-09-08');
+  });
+});
+
+describe('разделы базы материалов', () => {
+  it('раскладывает типы по вкладкам', () => {
+    expect(typesForSection('video')).toEqual(['video_file', 'video_link']);
+    expect(typesForSection('audio')).toEqual(['audio_file', 'audio_link']);
+    expect(typesForSection('image')).toEqual(['image']);
+  });
+
+  it('находит вкладку по типу материала', () => {
+    expect(sectionForType('video_file')).toBe('video');
+    expect(sectionForType('audio_link')).toBe('audio');
+    expect(sectionForType('image')).toBe('image');
   });
 });

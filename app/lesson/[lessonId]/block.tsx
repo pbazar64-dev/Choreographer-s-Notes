@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
-import { DEFAULT_BLOCK_KIND } from '@/constants/blockKinds';
+import { DEFAULT_BLOCK_KIND, titleForKindChange } from '@/constants/blockKinds';
 import { deleteBlock, getBlock, updateBlock } from '@/db/repositories/blocks.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
@@ -35,6 +35,12 @@ export default function BlockEditScreen() {
         <EmptyState title="Блок не найден" />
       </Screen>
     );
+  }
+
+  function handleKindChange(nextKind: string) {
+    setTitle((current) => titleForKindChange(current, kind, nextKind));
+    setKind(nextKind);
+    setTitleError(undefined);
   }
 
   function handleSave() {
@@ -88,6 +94,8 @@ export default function BlockEditScreen() {
         contentContainerStyle={{ gap: theme.spacing.lg, paddingVertical: theme.spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
+        <KindPicker value={kind} onChange={handleKindChange} />
+
         <TextField
           label="Название блока"
           value={title}
@@ -98,8 +106,6 @@ export default function BlockEditScreen() {
           placeholder="Разминка"
           error={titleError}
         />
-
-        <KindPicker value={kind} onChange={setKind} />
 
         <TextField
           label="Плановое время, мин"

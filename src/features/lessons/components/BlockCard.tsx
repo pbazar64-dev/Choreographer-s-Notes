@@ -13,6 +13,7 @@ export function BlockCard({
   onPress,
   onAddMaterial,
   onOpenMaterial,
+  onDetachMaterial,
   onMoveUp,
   onMoveDown,
   canMoveUp,
@@ -23,6 +24,7 @@ export function BlockCard({
   onPress: () => void;
   onAddMaterial: () => void;
   onOpenMaterial: (item: BlockMaterialItem) => void;
+  onDetachMaterial: (item: BlockMaterialItem) => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   canMoveUp: boolean;
@@ -59,7 +61,11 @@ export function BlockCard({
         ) : null}
       </Pressable>
 
-      <MaterialStrip items={block.materials} onPressItem={onOpenMaterial} />
+      <MaterialStrip
+        items={block.materials}
+        onPressItem={onOpenMaterial}
+        onDetachItem={onDetachMaterial}
+      />
 
       <View
         style={{
