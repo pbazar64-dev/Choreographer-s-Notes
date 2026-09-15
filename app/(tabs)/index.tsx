@@ -120,18 +120,9 @@ export default function CalendarScreen() {
               {formatLessonDate(upcoming.date)}
               {upcoming.startTime ? `, ${upcoming.startTime}` : ''} · {upcoming.plannedMinutes} мин
             </Text>
-            <View
-              style={{ flexDirection: 'row', gap: theme.spacing.sm, paddingTop: theme.spacing.sm }}
-            >
-              <Button
-                title="Провести"
-                style={{ flex: 1 }}
-                onPress={() => router.push(`/lesson/${upcoming.id}/run`)}
-              />
+            <View style={{ paddingTop: theme.spacing.sm }}>
               <Button
                 title="Открыть конспект"
-                variant="secondary"
-                style={{ flex: 1 }}
                 onPress={() => router.push(`/lesson/${upcoming.id}`)}
               />
             </View>

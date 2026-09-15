@@ -8,11 +8,9 @@ import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
 import { DurationPicker } from '@/features/groups/components/DurationPicker';
 import { DateField, isValidDateKey } from '@/features/lessons/components/DateField';
-import { LESSON_STATUS_LABELS } from '@/features/lessons/status';
-import type { LessonStatus } from '@/db/schema';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Button, EmptyState, Screen, SegmentedControl, Text, TextField } from '@/ui';
+import { Button, EmptyState, Screen, Text, TextField } from '@/ui';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -31,7 +29,6 @@ export default function LessonEditScreen() {
   const [startTime, setStartTime] = useState(lesson?.startTime ?? '');
   const [minutes, setMinutes] = useState(lesson?.plannedMinutes ?? 60);
   const [orderNumber, setOrderNumber] = useState(String(lesson?.orderNumber ?? 1));
-  const [status, setStatus] = useState<LessonStatus>(lesson?.status ?? 'draft');
   const [errors, setErrors] = useState<{ title?: string; date?: string; time?: string }>({});
 
   if (!lesson) {
@@ -66,7 +63,6 @@ export default function LessonEditScreen() {
       startTime: trimmedTime || null,
       plannedMinutes: minutes,
       orderNumber: Number.isFinite(parsedOrder) && parsedOrder > 0 ? Math.round(parsedOrder) : 1,
-      status,
     });
     bumpDbRevision();
     router.back();
@@ -154,21 +150,6 @@ export default function LessonEditScreen() {
           onChangeText={(value) => setOrderNumber(value.replace(/[^0-9]/g, ''))}
           keyboardType="number-pad"
         />
-
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="label" tone="muted">
-            Статус
-          </Text>
-          <SegmentedControl
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: 'draft', label: LESSON_STATUS_LABELS.draft },
-              { value: 'planned', label: LESSON_STATUS_LABELS.planned },
-              { value: 'done', label: LESSON_STATUS_LABELS.done },
-            ]}
-          />
-        </View>
 
         <View style={{ gap: theme.spacing.sm }}>
           <Button title="Сохранить" onPress={handleSave} />

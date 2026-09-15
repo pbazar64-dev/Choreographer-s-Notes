@@ -40,6 +40,11 @@ export const lessons = sqliteTable(
     /** 'HH:mm', может отсутствовать у черновика */
     startTime: text('start_time'),
     plannedMinutes: integer('planned_minutes').notNull().default(60),
+    /**
+     * Устаревшее поле: статус конспекта теперь вычисляется из времени блоков
+     * (см. features/lessons/status). Колонка оставлена, чтобы не перестраивать
+     * таблицу и не рисковать данными; в интерфейсе не используется.
+     */
     status: text('status', { enum: ['draft', 'planned', 'done'] })
       .notNull()
       .default('draft'),

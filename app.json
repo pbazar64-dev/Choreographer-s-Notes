@@ -14,20 +14,18 @@
     ],
     "android": {
       "package": "com.choreonotes.app",
-      "versionCode": 11,
+      "versionCode": 12,
       "adaptiveIcon": {
         "backgroundColor": "#F5F3EF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_MEDIA_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.VIBRATE"
+        "android.permission.READ_EXTERNAL_STORAGE"
       ],
       "blockedPermissions": [
         "android.permission.ACCESS_MEDIA_LOCATION",

@@ -1,10 +1,10 @@
 import { createGroup } from '@/db/repositories/groups.repo';
+import { createBlock } from '@/db/repositories/blocks.repo';
 import {
   createLesson,
   getUpcomingLesson,
   listLessonsBetween,
   listLessonsByDate,
-  setLessonStatus,
 } from '@/db/repositories/lessons.repo';
 import type { AppDatabase } from '@/db/client';
 import { getWeekDays, shiftWeek } from '@/features/calendar/weekDays';
@@ -55,7 +55,6 @@ describe('уроки в календаре', () => {
       date,
       startTime: startTime ?? null,
       plannedMinutes: 60,
-      status: 'planned',
     });
   }
 
@@ -90,16 +89,25 @@ describe('уроки в календаре', () => {
     expect(period.map((lesson) => lesson.date)).toEqual(['2026-09-01', '2026-09-30']);
   });
 
-  it('ближайшим считает самый ранний непроведённый урок начиная с сегодня', () => {
+  it('ближайшим считает самый ранний урок начиная с сегодня', () => {
     const group = createGroup(db, { name: 'Дети 8–10', colorHex: '#C2703D' });
     makeLesson(group.id, '2026-09-05', '16:00', 'Прошедший');
-    const done = makeLesson(group.id, '2026-09-10', '16:00', 'Уже проведён');
-    makeLesson(group.id, '2026-09-10', '19:30', 'Тот самый');
+    makeLesson(group.id, '2026-09-10', '16:00', 'Тот самый');
+    makeLesson(group.id, '2026-09-10', '19:30', 'Позже в тот же день');
     makeLesson(group.id, '2026-09-12', '16:00', 'Позже');
 
-    setLessonStatus(db, done.id, 'done');
-
     expect(getUpcomingLesson(db, '2026-09-10')?.title).toBe('Тот самый');
+  });
+
+  it('считает время блоков для статуса «Запланирован»', () => {
+    const group = createGroup(db, { name: 'Дети 8–10', colorHex: '#C2703D' });
+    const lesson = makeLesson(group.id, '2026-09-10', '16:00');
+    createBlock(db, { lessonId: lesson.id, title: 'Разминка', plannedMinutes: 20 });
+    createBlock(db, { lessonId: lesson.id, title: 'Кросс', plannedMinutes: 40 });
+
+    const [fromCalendar] = listLessonsByDate(db, '2026-09-10');
+    expect(fromCalendar?.blocksMinutes).toBe(60);
+    expect(getUpcomingLesson(db, '2026-09-10')?.blocksMinutes).toBe(60);
   });
 
   it('возвращает null, когда впереди уроков нет', () => {

@@ -157,8 +157,6 @@ export default function LessonScreen() {
                 onPress={handleShare}
               />
             </View>
-            <Button title="Провести урок" onPress={() => router.push(`/lesson/${lessonId}/run`)} />
-
             <Text variant="caption" tone="muted">
               Тап по блоку — редактирование. Кнопки «Выше» и «Ниже» меняют порядок.
             </Text>

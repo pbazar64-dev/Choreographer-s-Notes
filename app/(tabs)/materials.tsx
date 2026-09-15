@@ -7,7 +7,6 @@ import {
   deleteTag,
   listMaterials,
   listTags,
-  type MaterialFilters,
 } from '@/db/repositories/materials.repo';
 import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
@@ -26,8 +25,6 @@ import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button, EmptyState, Screen, SegmentedControl, Text, TextField } from '@/ui';
 
-type SortValue = NonNullable<MaterialFilters['sort']>;
-
 const MIN_TILE_WIDTH = 180;
 
 export default function MaterialsScreen() {
@@ -39,7 +36,6 @@ export default function MaterialsScreen() {
   const [section, setSection] = useState<MaterialSection>('video');
   const [search, setSearch] = useState('');
   const [tagIds, setTagIds] = useState<number[]>([]);
-  const [sort, setSort] = useState<SortValue>('created_desc');
   const [progress, setProgress] = useState<ImportProgress | null>(null);
 
   const tags = useDbQuery((database) => listTags(database), []);
@@ -49,9 +45,8 @@ export default function MaterialsScreen() {
         search,
         types: typesForSection(section),
         tagIds,
-        sort,
       }),
-    [section, search, tagIds.join(','), sort],
+    [section, search, tagIds.join(',')],
   );
 
   const isAudio = section === 'audio';
@@ -158,17 +153,6 @@ export default function MaterialsScreen() {
               activeTagIds={tagIds}
               onToggleTag={toggleTag}
               onDeleteTag={handleDeleteTag}
-            />
-
-            <SegmentedControl
-              value={sort}
-              onChange={setSort}
-              options={[
-                { value: 'created_desc', label: 'Новые' },
-                { value: 'created_asc', label: 'Старые' },
-                { value: 'size_desc', label: 'Тяжёлые' },
-                { value: 'title_asc', label: 'По алфавиту' },
-              ]}
             />
 
             {progress ? (

@@ -22,7 +22,7 @@ export type PickedFile = {
   sizeBytes: number | null;
 };
 
-const MEDIA_MIME_TYPES = ['video/*', 'audio/*', 'image/*'];
+const MEDIA_MIME_TYPES = ['video/*', 'audio/*'];
 
 /**
  * Выбор файлов системным пикером (Storage Access Framework).

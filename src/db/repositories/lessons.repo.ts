@@ -9,27 +9,39 @@ import {
   lessonBlocks,
   lessons,
   type Lesson,
-  type LessonStatus,
   type NewLesson,
 } from '../schema';
 
 export type LessonListItem = Lesson & {
   groupName: string;
   groupColorHex: string;
+  /** Сумма планового времени блоков — по ней считается, расписан ли урок целиком */
+  blocksMinutes: number;
 };
 
 const withGroup = {
   lesson: lessons,
   groupName: groups.name,
   groupColorHex: groups.colorHex,
+  blocksMinutes: sql<number>`(
+    select coalesce(sum(${lessonBlocks.plannedMinutes}), 0)
+    from ${lessonBlocks}
+    where ${lessonBlocks.lessonId} = ${lessons.id}
+  )`,
 };
 
 function mapLesson(row: {
   lesson: Lesson;
   groupName: string;
   groupColorHex: string;
+  blocksMinutes: number;
 }): LessonListItem {
-  return { ...row.lesson, groupName: row.groupName, groupColorHex: row.groupColorHex };
+  return {
+    ...row.lesson,
+    groupName: row.groupName,
+    groupColorHex: row.groupColorHex,
+    blocksMinutes: Number(row.blocksMinutes ?? 0),
+  };
 }
 
 export function getLesson(db: AppDatabase, id: number): LessonListItem | null {
@@ -126,7 +138,7 @@ export function getUpcomingLesson(db: AppDatabase, fromKey: string): LessonListI
     .select(withGroup)
     .from(lessons)
     .innerJoin(groups, eq(groups.id, lessons.groupId))
-    .where(and(gte(lessons.date, fromKey), sql`${lessons.status} <> 'done'`))
+    .where(gte(lessons.date, fromKey))
     .orderBy(asc(lessons.date), asc(lessons.startTime))
     .limit(1)
     .get();
@@ -151,10 +163,6 @@ export function updateLesson(
       .returning()
       .get() ?? null
   );
-}
-
-export function setLessonStatus(db: AppDatabase, id: number, status: LessonStatus): void {
-  db.update(lessons).set({ status, updatedAt: Date.now() }).where(eq(lessons.id, id)).run();
 }
 
 /** Удаляет урок вместе с блоками и связками, но не трогает материалы общей базы. */
@@ -186,7 +194,6 @@ export function duplicateLesson(db: AppDatabase, lessonId: number, newDate: stri
         date: newDate,
         startTime: source.startTime,
         plannedMinutes: source.plannedMinutes,
-        status: 'draft',
         goal: source.goal,
       })
       .returning()

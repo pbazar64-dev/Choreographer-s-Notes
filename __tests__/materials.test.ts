@@ -227,15 +227,15 @@ describe('база материалов', () => {
 });
 
 describe('разделы базы материалов', () => {
-  it('раскладывает типы по вкладкам', () => {
-    expect(typesForSection('video')).toEqual(['video_file', 'video_link']);
+  it('раскладывает типы по вкладкам: только видео и аудио', () => {
+    expect(typesForSection('video')).toEqual(['video_file', 'video_link', 'image']);
     expect(typesForSection('audio')).toEqual(['audio_file', 'audio_link']);
-    expect(typesForSection('image')).toEqual(['image']);
   });
 
   it('находит вкладку по типу материала', () => {
     expect(sectionForType('video_file')).toBe('video');
     expect(sectionForType('audio_link')).toBe('audio');
-    expect(sectionForType('image')).toBe('image');
+    // Старые изображения остаются видимыми среди видео.
+    expect(sectionForType('image')).toBe('video');
   });
 });

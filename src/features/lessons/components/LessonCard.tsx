@@ -5,7 +5,7 @@ import { formatLessonDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Badge, Card, Text } from '@/ui';
 
-import { lessonStatusLabel } from '../status';
+import { lessonPlanLabel } from '../status';
 
 export function LessonCard({
   lesson,
@@ -27,7 +27,7 @@ export function LessonCard({
           Урок {lesson.orderNumber}
           {showGroupName ? ` · ${lesson.groupName}` : ''}
         </Text>
-        <Badge label={lessonStatusLabel(lesson.status)} />
+        <Badge label={lessonPlanLabel(lesson.blocksMinutes, lesson.plannedMinutes)} />
       </View>
 
       <Text variant="subtitle">{lesson.title}</Text>

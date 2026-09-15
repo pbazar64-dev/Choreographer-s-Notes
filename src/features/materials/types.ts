@@ -9,10 +9,13 @@ export const MATERIAL_TYPE_LABELS: Record<MaterialType, string> = {
 };
 
 /** Разделы базы материалов: видео, аудио и фото лежат по разным вкладкам. */
+/**
+ * Разделы базы: только видео и аудио. Материалы-изображения больше не
+ * добавляются, но старые показываются среди видео, чтобы не пропасть из виду.
+ */
 export const MATERIAL_SECTIONS = [
-  { code: 'video', label: 'Видео', types: ['video_file', 'video_link'] },
+  { code: 'video', label: 'Видео', types: ['video_file', 'video_link', 'image'] },
   { code: 'audio', label: 'Аудио', types: ['audio_file', 'audio_link'] },
-  { code: 'image', label: 'Фото', types: ['image'] },
 ] as const satisfies readonly { code: string; label: string; types: readonly MaterialType[] }[];
 
 export type MaterialSection = (typeof MATERIAL_SECTIONS)[number]['code'];
@@ -34,7 +37,6 @@ export const MATERIAL_FILTERS = [
   { code: 'video', label: 'Видео', types: ['video_file', 'video_link'] },
   { code: 'audio', label: 'Аудио', types: ['audio_file', 'audio_link'] },
   { code: 'link', label: 'Ссылки', types: ['video_link', 'audio_link'] },
-  { code: 'image', label: 'Фото', types: ['image'] },
 ] as const satisfies readonly { code: string; label: string; types: readonly MaterialType[] }[];
 
 export type MaterialFilterCode = (typeof MATERIAL_FILTERS)[number]['code'];
