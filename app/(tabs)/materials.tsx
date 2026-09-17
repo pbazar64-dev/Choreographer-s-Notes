@@ -23,7 +23,7 @@ import {
 import { pickMediaFiles } from '@/lib/media';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Button, EmptyState, Screen, SegmentedControl, Text, TextField } from '@/ui';
+import { BottomBar, Button, EmptyState, Screen, SegmentedControl, Text, TextField } from '@/ui';
 
 const MIN_TILE_WIDTH = 180;
 
@@ -120,7 +120,7 @@ export default function MaterialsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen padded={false}>
       <FlatList
         key={`${section}-${columns}`}
         data={materials}
@@ -130,7 +130,8 @@ export default function MaterialsScreen() {
         columnWrapperStyle={columns > 1 ? { gap } : undefined}
         contentContainerStyle={{
           gap: isAudio ? theme.spacing.sm : gap,
-          paddingBottom: theme.spacing.xl,
+          paddingBottom: theme.spacing.lg,
+          paddingHorizontal: theme.spacing.lg,
           paddingTop: theme.spacing.lg,
         }}
         ListHeaderComponent={
@@ -198,9 +199,7 @@ export default function MaterialsScreen() {
         }
       />
 
-      <View
-        style={{ flexDirection: 'row', gap: theme.spacing.sm, paddingBottom: theme.spacing.lg }}
-      >
+      <BottomBar>
         <Button
           title="Файлы"
           style={{ flex: 1 }}
@@ -214,7 +213,7 @@ export default function MaterialsScreen() {
           onPress={() => router.push('/material/add-link')}
           disabled={progress !== null}
         />
-      </View>
+      </BottomBar>
     </Screen>
   );
 }

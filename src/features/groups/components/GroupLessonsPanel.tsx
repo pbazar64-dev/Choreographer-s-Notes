@@ -9,7 +9,7 @@ import { saveLessonsSort } from '@/features/settings/preferences';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useUiPrefs } from '@/stores/uiPrefs';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Button, EmptyState, SegmentedControl, Text, TextField } from '@/ui';
+import { BottomBar, Button, EmptyState, SegmentedControl, Text, TextField } from '@/ui';
 
 /**
  * Лента конспектов группы. Используется и как отдельный экран, и как правая
@@ -139,9 +139,9 @@ export function GroupLessonsPanel({
       />
 
       {lessons.length > 0 ? (
-        <View style={{ paddingBottom: theme.spacing.lg }}>
-          <Button title="Новый конспект" onPress={onCreateLesson} />
-        </View>
+        <BottomBar>
+          <Button title="Новый конспект" style={{ flex: 1 }} onPress={onCreateLesson} />
+        </BottomBar>
       ) : null}
     </View>
   );

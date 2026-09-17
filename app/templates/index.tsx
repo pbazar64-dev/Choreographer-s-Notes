@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { FlatList, View } from 'react-native';
+import { FlatList } from 'react-native';
 
 import { listGroups } from '@/db/repositories/groups.repo';
 import {
@@ -12,7 +12,7 @@ import { useDatabase } from '@/db/useDatabase';
 import { useDbQuery } from '@/db/useDbQuery';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Button, Card, EmptyState, Screen, Text } from '@/ui';
+import { BottomBar, Button, Card, EmptyState, Screen, Text } from '@/ui';
 
 export default function TemplatesScreen() {
   const db = useDatabase();
@@ -84,9 +84,9 @@ export default function TemplatesScreen() {
       />
 
       {templates.length > 0 ? (
-        <View style={{ paddingBottom: theme.spacing.lg }}>
-          <Button title="Создать шаблон" onPress={handleCreate} />
-        </View>
+        <BottomBar>
+          <Button title="Создать шаблон" style={{ flex: 1 }} onPress={handleCreate} />
+        </BottomBar>
       ) : null}
     </Screen>
   );

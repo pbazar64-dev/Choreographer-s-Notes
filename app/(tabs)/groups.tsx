@@ -7,7 +7,7 @@ import { useDbQuery } from '@/db/useDbQuery';
 import { GroupCard } from '@/features/groups/components/GroupCard';
 import { GroupLessonsPanel } from '@/features/groups/components/GroupLessonsPanel';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Button, EmptyState, Screen, Text, TwoPane, useWideLayout } from '@/ui';
+import { BottomBar, Button, EmptyState, Screen, Text, TwoPane, useWideLayout } from '@/ui';
 
 export default function GroupsScreen() {
   const router = useRouter();
@@ -76,9 +76,13 @@ export default function GroupsScreen() {
       />
 
       {groups.length > 0 ? (
-        <View style={{ paddingBottom: theme.spacing.lg }}>
-          <Button title="Новая группа" onPress={() => router.push('/group/edit')} />
-        </View>
+        <BottomBar>
+          <Button
+            title="Новая группа"
+            style={{ flex: 1 }}
+            onPress={() => router.push('/group/edit')}
+          />
+        </BottomBar>
       ) : null}
     </View>
   );
