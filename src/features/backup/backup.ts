@@ -197,18 +197,11 @@ function findBackupRoot(staging: Directory): Directory | null {
 }
 
 export async function pickBackupArchive(): Promise<string | null> {
-  try {
-    const picked = await File.pickFileAsync({ mimeTypes: ['application/zip', '*/*'] });
-    if (picked.canceled || !picked.result) return null;
-    return picked.result.uri;
-  } catch {
-    // Запасной путь тем же пикером, что и раньше.
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/zip', 'application/octet-stream', '*/*'],
-      copyToCacheDirectory: true,
-    });
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['application/zip', 'application/octet-stream', '*/*'],
+    copyToCacheDirectory: true,
+  });
 
-    if (result.canceled || !result.assets[0]) return null;
-    return result.assets[0].uri;
-  }
+  if (result.canceled || !result.assets[0]) return null;
+  return result.assets[0].uri;
 }

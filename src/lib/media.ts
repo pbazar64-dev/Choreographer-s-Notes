@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { createAudioPlayer } from 'expo-audio';
 import { createVideoPlayer } from 'expo-video';
@@ -28,33 +27,11 @@ const MEDIA_MIME_TYPES = ['video/*', 'audio/*'];
  * Выбор файлов системным пикером (Storage Access Framework).
  * Разрешения на хранилище для этого пути не нужны — их и не спрашиваем.
  *
- * Берём пикер из expo-file-system: у expo-document-picker есть защита
- * «выбор уже идёт», и если предыдущий вызов не завершился (так бывает, когда
- * пикер закрывают системной кнопкой «назад»), все следующие попытки молча
- * падают до перезапуска приложения. Старый пикер оставлен запасным путём.
+ * Пикер именно из expo-document-picker: он отдаёт настоящее имя файла,
+ * а пикер expo-file-system выводит имя из служебного адреса content://
+ * и вместо «Разминка с мячом.mp4» даёт нечитаемую строку.
  */
 export async function pickMediaFiles(multiple = true): Promise<PickedFile[]> {
-  try {
-    const picked = await File.pickFileAsync({
-      multipleFiles: true,
-      mimeTypes: MEDIA_MIME_TYPES,
-    });
-
-    if (picked.canceled || !picked.result) return [];
-
-    const files = Array.isArray(picked.result) ? picked.result : [picked.result];
-    return files.map((file) => ({
-      uri: file.uri,
-      name: file.name,
-      mimeType: null,
-      sizeBytes: file.exists ? (file.size ?? null) : null,
-    }));
-  } catch {
-    return pickMediaFilesLegacy(multiple);
-  }
-}
-
-async function pickMediaFilesLegacy(multiple: boolean): Promise<PickedFile[]> {
   try {
     const result = await DocumentPicker.getDocumentAsync({
       type: MEDIA_MIME_TYPES,
@@ -71,7 +48,7 @@ async function pickMediaFilesLegacy(multiple: boolean): Promise<PickedFile[]> {
       sizeBytes: asset.size ?? null,
     }));
   } catch {
-    // Оба пикера отказали — вернуть пустой выбор честнее, чем уронить экран.
+    // Пикер отказал — пустой выбор честнее, чем уронить экран.
     return [];
   }
 }
