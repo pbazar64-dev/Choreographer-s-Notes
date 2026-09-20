@@ -35,6 +35,17 @@ const FONT_LABELS: Record<FontScale, string> = {
   1.3: 'Очень крупный',
 };
 
+/**
+ * У нативных ошибок первая строка человеческая, а дальше идёт стек Java —
+ * в диалоге он только пугает и всё равно не помещается.
+ */
+function errorText(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const firstLine = message.split('\n')[0]?.replace(/^Error:\s*/, '').trim();
+
+  return firstLine || 'Неизвестная ошибка.';
+}
+
 export default function SettingsScreen() {
   const db = useDatabase();
   const router = useRouter();
@@ -63,7 +74,7 @@ export default function SettingsScreen() {
       await exportBackup(setStep);
       bumpDbRevision();
     } catch (error) {
-      Alert.alert('Не удалось создать копию', String(error));
+      Alert.alert('Не удалось создать копию', errorText(error));
     } finally {
       setStep(null);
     }
@@ -93,7 +104,7 @@ export default function SettingsScreen() {
                   : (result.reason ?? 'Архив не подошёл.'),
               );
             } catch (error) {
-              Alert.alert('Не удалось восстановить', String(error));
+              Alert.alert('Не удалось восстановить', errorText(error));
             } finally {
               setStep(null);
             }

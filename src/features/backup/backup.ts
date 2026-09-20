@@ -13,6 +13,7 @@ import {
   parseManifest,
   type BackupManifest,
 } from './manifest';
+import { joinUri, toFilePath, toFileUri } from './paths';
 
 export type BackupStep =
   'prepare' | 'database' | 'materials' | 'archive' | 'share' | 'unpack' | 'restore' | 'done';
@@ -38,18 +39,44 @@ function zipArchive() {
   return require('react-native-zip-archive') as typeof import('react-native-zip-archive');
 }
 
-/** react-native-zip-archive работает с путями файловой системы, а не с file:// URI. */
-function toPath(uri: string): string {
-  return decodeURIComponent(uri.replace(/^file:\/\//, '')).replace(/\/$/, '');
+/** Нативные значения читаем через try: геттер может бросить, а не вернуть null. */
+function readNativePath(read: () => unknown): string | null {
+  try {
+    const value = read();
+    return typeof value === 'string' ? value : null;
+  } catch {
+    return null;
+  }
 }
 
+/**
+ * Где лежит файл базы. Самый надёжный источник — само открытое подключение:
+ * expo-sqlite хранит там путь, по которому базу и открыли. Но отдаёт он его
+ * без схемы `file://`, поэтому путь обязательно нормализуем — иначе
+ * expo-file-system падает с «URI is not absolute».
+ */
 function databaseFile(): File {
-  const directory =
-    typeof SQLite.defaultDatabaseDirectory === 'string'
-      ? new Directory(SQLite.defaultDatabaseDirectory)
-      : new Directory(Paths.document, 'SQLite');
+  const fromConnection = toFileUri(readNativePath(() => getConnection().databasePath));
+  const fromDefaultDirectory = toFileUri(readNativePath(() => SQLite.defaultDatabaseDirectory));
 
-  return new File(directory, DATABASE_NAME);
+  const candidates = [
+    fromConnection,
+    fromDefaultDirectory ? joinUri(fromDefaultDirectory, DATABASE_NAME) : null,
+  ];
+
+  for (const uri of candidates) {
+    if (!uri) continue;
+
+    try {
+      const file = new File(uri);
+      if (file.exists) return file;
+    } catch {
+      // Кандидат не разобрался — пробуем следующий.
+    }
+  }
+
+  // Запасной вариант: папка по умолчанию внутри данных приложения.
+  return new File(Paths.document, 'SQLite', DATABASE_NAME);
 }
 
 function deleteQuietly(entry: File | Directory): void {
@@ -76,7 +103,12 @@ export async function exportBackup(onStep?: (step: BackupStep) => void): Promise
     onStep?.('database');
     // Сбрасываем журнал WAL, иначе в копию уедет база без последних изменений.
     getConnection().execSync('PRAGMA wal_checkpoint(TRUNCATE);');
-    await databaseFile().copy(new File(staging, DATABASE_NAME));
+
+    const source = databaseFile();
+    if (!source.exists) {
+      throw new Error('Не удалось найти файл базы данных.');
+    }
+    await source.copy(new File(staging, DATABASE_NAME));
 
     onStep?.('materials');
     for (const name of [MATERIALS_DIR, THUMBNAILS_DIR]) {
@@ -99,7 +131,7 @@ export async function exportBackup(onStep?: (step: BackupStep) => void): Promise
     onStep?.('archive');
     const archive = new File(Paths.cache, buildBackupFileName(new Date()));
     deleteQuietly(archive);
-    await zipArchive().zip(toPath(staging.uri), toPath(archive.uri));
+    await zipArchive().zip(toFilePath(staging.uri), toFilePath(archive.uri));
 
     onStep?.('share');
     if (await Sharing.isAvailableAsync()) {
@@ -135,7 +167,7 @@ export async function importBackup(
   staging.create({ intermediates: true, idempotent: true });
 
   try {
-    await zipArchive().unzip(toPath(pickedUri), toPath(staging.uri));
+    await zipArchive().unzip(toFilePath(pickedUri), toFilePath(staging.uri));
 
     const root = findBackupRoot(staging);
     if (!root) {
@@ -154,9 +186,10 @@ export async function importBackup(
     }
 
     onStep?.('restore');
-    closeDatabase();
-
+    // Путь к базе спрашиваем до закрытия: он берётся у живого подключения.
     const target = databaseFile();
+
+    closeDatabase();
     deleteQuietly(target);
     // Журналы старой базы удаляем: иначе SQLite попытается применить их к новой.
     deleteQuietly(new File(target.parentDirectory, `${DATABASE_NAME}-wal`));
