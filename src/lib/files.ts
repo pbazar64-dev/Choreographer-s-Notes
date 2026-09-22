@@ -98,3 +98,12 @@ export function deleteFileQuietly(relativePath: string | null | undefined): void
     // Файл мог быть удалён снаружи — данные в базе важнее.
   }
 }
+
+/** Тихое удаление файла или папки по объекту — для временных папок распаковки. */
+export function deleteEntryQuietly(entry: File | Directory): void {
+  try {
+    if (entry.exists) entry.delete();
+  } catch {
+    // Нечего удалять — не ошибка.
+  }
+}

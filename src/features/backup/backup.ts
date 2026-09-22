@@ -5,7 +5,15 @@ import * as SQLite from 'expo-sqlite';
 
 import { DATABASE_NAME, closeDatabase, getConnection, getDb, reopenDatabase } from '@/db/client';
 import { setSetting, SETTINGS_KEYS } from '@/db/repositories/settings.repo';
-import { MATERIALS_DIR, THUMBNAILS_DIR, ensureMediaDirectories } from '@/lib/files';
+import { PACK_MANIFEST_NAME } from '@/features/materials/pack';
+import { zipArchive } from '@/lib/archive';
+import { toFilePath, toFileUri, joinUri } from '@/lib/fileUri';
+import {
+  MATERIALS_DIR,
+  THUMBNAILS_DIR,
+  deleteEntryQuietly,
+  ensureMediaDirectories,
+} from '@/lib/files';
 
 import {
   BACKUP_FORMAT_VERSION,
@@ -13,7 +21,6 @@ import {
   parseManifest,
   type BackupManifest,
 } from './manifest';
-import { joinUri, toFilePath, toFileUri } from './paths';
 
 export type BackupStep =
   'prepare' | 'database' | 'materials' | 'archive' | 'share' | 'unpack' | 'restore' | 'done';
@@ -28,16 +35,6 @@ export const BACKUP_STEP_LABELS: Record<BackupStep, string> = {
   restore: 'Восстанавливаю данные',
   done: 'Готово',
 };
-
-/**
- * Библиотека архивации подключается лениво, при первом бэкапе: expo-router
- * загружает все экраны при старте, и падение нативного модуля на импорте
- * уронило бы всё приложение, а не только резервное копирование.
- */
-function zipArchive() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('react-native-zip-archive') as typeof import('react-native-zip-archive');
-}
 
 /** Нативные значения читаем через try: геттер может бросить, а не вернуть null. */
 function readNativePath(read: () => unknown): string | null {
@@ -79,14 +76,6 @@ function databaseFile(): File {
   return new File(Paths.document, 'SQLite', DATABASE_NAME);
 }
 
-function deleteQuietly(entry: File | Directory): void {
-  try {
-    if (entry.exists) entry.delete();
-  } catch {
-    // Нечего удалять — не ошибка.
-  }
-}
-
 /**
  * Экспорт: база и все файлы материалов в один .zip, дальше — системный диалог
  * «Поделиться», через который архив кладут в «Загрузки», на карту или в облако.
@@ -96,7 +85,7 @@ export async function exportBackup(onStep?: (step: BackupStep) => void): Promise
   ensureMediaDirectories();
 
   const staging = new Directory(Paths.cache, `backup-staging-${Date.now()}`);
-  deleteQuietly(staging);
+  deleteEntryQuietly(staging);
   staging.create({ intermediates: true, idempotent: true });
 
   try {
@@ -130,7 +119,7 @@ export async function exportBackup(onStep?: (step: BackupStep) => void): Promise
 
     onStep?.('archive');
     const archive = new File(Paths.cache, buildBackupFileName(new Date()));
-    deleteQuietly(archive);
+    deleteEntryQuietly(archive);
     await zipArchive().zip(toFilePath(staging.uri), toFilePath(archive.uri));
 
     onStep?.('share');
@@ -146,7 +135,7 @@ export async function exportBackup(onStep?: (step: BackupStep) => void): Promise
 
     return archive.uri;
   } finally {
-    deleteQuietly(staging);
+    deleteEntryQuietly(staging);
   }
 }
 
@@ -163,7 +152,7 @@ export async function importBackup(
   onStep?.('unpack');
 
   const staging = new Directory(Paths.cache, `restore-staging-${Date.now()}`);
-  deleteQuietly(staging);
+  deleteEntryQuietly(staging);
   staging.create({ intermediates: true, idempotent: true });
 
   try {
@@ -171,7 +160,13 @@ export async function importBackup(
 
     const root = findBackupRoot(staging);
     if (!root) {
-      return { restored: false, reason: 'В архиве нет manifest.json — это не копия приложения.' };
+      // Набор материалов и копию легко перепутать: оба — zip от этого приложения.
+      return {
+        restored: false,
+        reason: containsPack(staging)
+          ? 'Это набор материалов, а не резервная копия. Его нужно добавлять кнопкой «Добавить набор от друга».'
+          : 'В архиве нет manifest.json — это не копия приложения.',
+      };
     }
 
     const manifestFile = new File(root, 'manifest.json');
@@ -190,15 +185,15 @@ export async function importBackup(
     const target = databaseFile();
 
     closeDatabase();
-    deleteQuietly(target);
+    deleteEntryQuietly(target);
     // Журналы старой базы удаляем: иначе SQLite попытается применить их к новой.
-    deleteQuietly(new File(target.parentDirectory, `${DATABASE_NAME}-wal`));
-    deleteQuietly(new File(target.parentDirectory, `${DATABASE_NAME}-shm`));
+    deleteEntryQuietly(new File(target.parentDirectory, `${DATABASE_NAME}-wal`));
+    deleteEntryQuietly(new File(target.parentDirectory, `${DATABASE_NAME}-shm`));
     await backupDatabase.copy(target);
 
     for (const name of [MATERIALS_DIR, THUMBNAILS_DIR]) {
       const current = new Directory(Paths.document, name);
-      deleteQuietly(current);
+      deleteEntryQuietly(current);
 
       const fromBackup = new Directory(root, name);
       if (fromBackup.exists) {
@@ -212,8 +207,16 @@ export async function importBackup(
 
     return { restored: true };
   } finally {
-    deleteQuietly(staging);
+    deleteEntryQuietly(staging);
   }
+}
+
+function containsPack(staging: Directory): boolean {
+  if (new File(staging, PACK_MANIFEST_NAME).exists) return true;
+
+  return staging
+    .list()
+    .some((entry) => entry instanceof Directory && new File(entry, PACK_MANIFEST_NAME).exists);
 }
 
 /** Архиватор мог положить содержимое как в корень, так и во вложенную папку. */

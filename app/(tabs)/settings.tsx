@@ -15,8 +15,18 @@ import {
   type BackupStep,
 } from '@/features/backup/backup';
 import { BACKUP_REMINDER_DAYS, daysSinceBackup } from '@/features/backup/manifest';
+import { packSize } from '@/features/materials/pack';
+import {
+  applyPack,
+  discardPack,
+  openPackArchive,
+  pickPackArchive,
+  type OpenedPack,
+  type PackProgress,
+} from '@/features/materials/packTransfer';
 import { saveFontScale, saveThemePreference } from '@/features/settings/preferences';
 import { formatFullDate } from '@/lib/date';
+import { errorText } from '@/lib/errors';
 import { formatBytes } from '@/lib/mediaTypes';
 import { bumpDbRevision } from '@/stores/dbRevision';
 import { FONT_SCALES, useUiPrefs, type FontScale, type ThemePreference } from '@/stores/uiPrefs';
@@ -35,17 +45,6 @@ const FONT_LABELS: Record<FontScale, string> = {
   1.3: 'Очень крупный',
 };
 
-/**
- * У нативных ошибок первая строка человеческая, а дальше идёт стек Java —
- * в диалоге он только пугает и всё равно не помещается.
- */
-function errorText(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  const firstLine = message.split('\n')[0]?.replace(/^Error:\s*/, '').trim();
-
-  return firstLine || 'Неизвестная ошибка.';
-}
-
 export default function SettingsScreen() {
   const db = useDatabase();
   const router = useRouter();
@@ -55,6 +54,7 @@ export default function SettingsScreen() {
   const fontScale = useUiPrefs((state) => state.lessonFontScale);
 
   const [step, setStep] = useState<BackupStep | null>(null);
+  const [packProgress, setPackProgress] = useState<PackProgress | null>(null);
 
   const backupInfo = useDbQuery((database) => {
     const lastBackupAt = getNumberSetting(database, SETTINGS_KEYS.lastBackupAt);
@@ -114,6 +114,82 @@ export default function SettingsScreen() {
     );
   }
 
+  /**
+   * Набор от друга только ДОБАВЛЯЕТСЯ к своим материалам: в отличие от
+   * восстановления копии, ничего не заменяется и не теряется.
+   */
+  async function handleAddPack() {
+    const uri = await pickPackArchive();
+    if (!uri) return;
+
+    let opened;
+    try {
+      opened = await openPackArchive(uri);
+    } catch (error) {
+      Alert.alert('Не удалось открыть набор', errorText(error));
+      return;
+    }
+
+    if (!opened.ok) {
+      Alert.alert('Это не набор материалов', opened.reason);
+      return;
+    }
+
+    const { opened: pack } = opened;
+    const count = pack.pack.materials.length;
+
+    // Распакованный архив живёт до конца добавления. Убрать его нужно на любом
+    // исходе диалога, но НЕ тогда, когда добавление уже пошло: на Android
+    // onDismiss срабатывает и после нажатия кнопки, а копирование ещё читает
+    // эту папку.
+    let started = false;
+
+    Alert.alert(
+      `Добавить ${count} материалов?`,
+      `Размер: ${formatBytes(packSize(pack.pack.materials))}. Они добавятся к вашим — ничего не заменится. Материалы, которые уже есть, пропустятся.`,
+      [
+        { text: 'Отмена', style: 'cancel', onPress: () => discardPack(pack) },
+        {
+          text: 'Добавить',
+          onPress: () => {
+            started = true;
+            void runAddPack(pack);
+          },
+        },
+      ],
+      {
+        onDismiss: () => {
+          if (!started) discardPack(pack);
+        },
+      },
+    );
+  }
+
+  async function runAddPack(pack: OpenedPack) {
+    setPackProgress({ current: 0, total: pack.pack.materials.length, title: '' });
+
+    try {
+      const result = await applyPack(db, pack, setPackProgress);
+      bumpDbRevision();
+
+      Alert.alert(
+        'Материалы добавлены',
+        [
+          `Добавлено: ${result.added}.`,
+          result.skipped > 0 ? `Уже были в базе: ${result.skipped}.` : null,
+          result.failed.length > 0 ? `Не удалось: ${result.failed.join(', ')}.` : null,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      );
+    } catch (error) {
+      Alert.alert('Не удалось добавить набор', errorText(error));
+    } finally {
+      discardPack(pack);
+      setPackProgress(null);
+    }
+  }
+
   return (
     <Screen>
       <ScrollView
@@ -155,6 +231,40 @@ export default function SettingsScreen() {
             <View style={{ gap: theme.spacing.sm, paddingTop: theme.spacing.sm }}>
               <Button title="Создать копию" onPress={handleExport} />
               <Button title="Восстановить из копии" variant="secondary" onPress={handleImport} />
+            </View>
+          )}
+        </Card>
+
+        <Card>
+          <Text variant="subtitle">Обмен материалами</Text>
+          <Text tone="muted">
+            Набор — это часть базы материалов одним файлом: видео и музыка едут вместе с
+            названиями, описаниями и тегами, и у другого человека сразу ложатся в базу. Свой набор
+            собирается на вкладке «Материалы» кнопкой «Поделиться».
+          </Text>
+
+          {packProgress ? (
+            <View
+              style={{
+                alignItems: 'center',
+                flexDirection: 'row',
+                gap: theme.spacing.sm,
+                paddingTop: theme.spacing.sm,
+              }}
+            >
+              <ActivityIndicator color={theme.colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text variant="label">
+                  Добавляю {packProgress.current} из {packProgress.total}
+                </Text>
+                <Text variant="caption" tone="muted" numberOfLines={1}>
+                  {packProgress.title}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={{ paddingTop: theme.spacing.sm }}>
+              <Button title="Добавить набор от друга" onPress={handleAddPack} />
             </View>
           )}
         </Card>

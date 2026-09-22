@@ -1,4 +1,4 @@
-import { joinUri, toFilePath, toFileUri } from '@/features/backup/paths';
+import { joinUri, toFilePath, toFileUri } from '@/lib/fileUri';
 
 describe('нормализация пути к файлу базы', () => {
   it('добавляет схему file:// к пути файловой системы', () => {
